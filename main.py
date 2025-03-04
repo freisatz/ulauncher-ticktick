@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 
 from ulauncher.api.client.Extension import Extension
@@ -92,9 +93,9 @@ class ItemEnterEventListener(EventListener):
             if(i.startswith("#")):
                 x = i.replace("#", '')
                 tags.append(x)
-                str = str.replace(i, "")
+                str =  print(re.sub(f"( {i}|{i} |{i})", "", str))
         
-        return str.replace("  ", " "), tags
+        return str, tags
 
     def on_push_action(self, event, _):
         data = event.get_data()
