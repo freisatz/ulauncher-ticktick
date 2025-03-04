@@ -80,9 +80,21 @@ class KeywordQueryEventListener(EventListener):
 
 class ItemEnterEventListener(EventListener):
 
-    def push(self, title, access_token):
+    def push(self, str, access_token):
         api = TickTickApi(access_token)
-        return api.create_task(title)
+        title, _ = self.extract_hashtags(str)
+        return api.create_task(title, str)
+
+    def extract_hashtags(self, str):
+        textList = str.split()
+        tags = []
+        for i in textList:
+            if(i.startswith("#")):
+                x = i.replace("#", '')
+                tags.append(x)
+                str = str.replace(i, "")
+        
+        return str.replace("  ", " "), tags
 
     def on_push_action(self, event, _):
         data = event.get_data()

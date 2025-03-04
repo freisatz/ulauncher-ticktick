@@ -9,10 +9,11 @@ class TickTickApi:
     def __init__(self, access_token = ""):
         self.access_token = access_token
 
-    def create_task(self, title):
+    def create_task(self, title, desc):
         url = 'https://api.ticktick.com/open/v1/task'
         payload = {
-            'title': title
+            'title': title,
+            'desc': desc
         }
         headers = {
             'Content-Type': 'application/json',
