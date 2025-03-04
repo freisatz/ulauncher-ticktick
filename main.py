@@ -25,70 +25,84 @@ import string
 
 logger = logging.getLogger(__name__)
 
+class AuthData:
+    client_id = ""
+    client_secret = ""
+    port = ""
+    access_token = ""
 
-class Authenticator:
-    
-    class RequestHandler(BaseHTTPRequestHandler):
+    def get_redirect_uri():
+        return f"http://127.0.0.1:{AuthData.port}"
 
-        def fetch_token(self, code, client_id, client_secret, redirect_uri):
-            url = 'https://ticktick.com/oauth/token'
+    def init(client_id, client_secret, port):
+        AuthData.client_id = client_id
+        AuthData.client_secret = client_secret
+        AuthData.port = port
 
-            payload = {
-                'code': code,
-                'grant_type': 'authorization_code',
-                'scope': 'tasks:write',
-                'redirect_uri': redirect_uri
-            }
-            headers = {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
 
-            response = requests.post(url, data=urlencode(payload), headers=headers, auth=(client_id, client_secret))
+class AuthRequestHandler(BaseHTTPRequestHandler):
 
-            json = response.json()
-            return json.get("access_token")
+    def fetch_token(self, code, client_id, client_secret, redirect_uri):
+        url = 'https://ticktick.com/oauth/token'
 
-        def do_GET(self):
+        payload = {
+            'code': code,
+            'grant_type': 'authorization_code',
+            'scope': 'tasks:write',
+            'redirect_uri': redirect_uri
+        }
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
 
-            # parse code from url
-            parsed_url = urlparse(self.path)
-            args = parse_qs(parsed_url.query)
-            code = args['code'][0]
+        response = requests.post(url, data=urlencode(payload), headers=headers, auth=(client_id, client_secret))
 
-            # fetch token from api
+        json = response.json()
+        return json.get("access_token")
 
-            response_code = 403
+    def do_GET(self):
+
+        # parse code from url
+        parsed_url = urlparse(self.path)
+        args = parse_qs(parsed_url.query)
+        code = args['code'][0]
+
+        # fetch token from api
+
+        response_code = 403
+        msg = "Continue in Ulauncher."
+
+        try:
+            AuthData.access_token = self.fetch_token(
+                code,
+                AuthData.client_id,
+                AuthData.client_secret,
+                AuthData.get_redirect_uri()
+            )
+            response_code = 200
             msg = "Continue in Ulauncher."
+        except Exception as err:
+            response_code = 200
+            msg = f"Something went wrong:\n{err}"
 
-            try:
-                Authenticator.access_token = self.fetch_token(
-                    code,
-                    Authenticator.client_id,
-                    Authenticator.client_secret,
-                    Authenticator.redirect_uri
-                )
-                response_code = 200
-                msg = "Continue in Ulauncher."
-            except Exception as err:
-                response_code = 200
-                msg = f"Something went wrong:\n{err}"
+        self.send_response(response_code)
+        self.send_header("Content-Type", "text/html")
+        self.end_headers()
+        self.wfile.write(bytes("<html><head><title>Token creation</title></head>", "utf-8"))
+        self.wfile.write(bytes("<body>", "utf-8"))
+        self.wfile.write(bytes(f"<p>{msg}</p>", "utf-8"))
+        self.wfile.write(bytes("</body></html>", "utf-8"))
 
-            self.send_response(response_code)
-            self.send_header("Content-Type", "text/html")
-            self.end_headers()
-            self.wfile.write(bytes("<html><head><title>Token creation</title></head>", "utf-8"))
-            self.wfile.write(bytes("<body>", "utf-8"))
-            self.wfile.write(bytes(f"<p>{msg}</p>", "utf-8"))
-            self.wfile.write(bytes("</body></html>", "utf-8"))
 
+class AuthManager:
 
     access_token = ""
 
     def run(client_id, client_secret, port):
     
-        Authenticator.client_id = client_id
-        Authenticator.client_secret = client_secret
-        Authenticator.redirect_uri = f"http://127.0.0.1:{port}"
+        AuthData.client_id = client_id
+        AuthData.client_secret = client_secret
+        AuthData.port = int(port)
 
         length = 6        
         state = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -97,7 +111,7 @@ class Authenticator:
             'scope': 'tasks:write',
             'client_id': client_id,
             'state': state,
-            'redirect_uri': Authenticator.redirect_uri,
+            'redirect_uri': AuthData.get_redirect_uri(),
             'response_type': 'code'
         }
         encoded_data = urlencode(data)
@@ -106,10 +120,10 @@ class Authenticator:
 
         webbrowser.open(auth_uri)
 
-        with HTTPServer(("127.0.0.1", int(port)), Authenticator.RequestHandler) as server:
+        with HTTPServer(("127.0.0.1", AuthData.port), AuthRequestHandler) as server:
             server.handle_request()
 
-        return Authenticator.access_token
+        return AuthData.access_token
     
 
 def read_token():
@@ -194,7 +208,7 @@ class ItemEnterEventListener(EventListener):
         if data['action'] == 'push':
             self.push(data['name'], data['access_token'])
         elif data['action'] == 'authorize':
-            access_token = Authenticator.run(
+            access_token = AuthManager.run(
                 extension.preferences['client_id'],
                 extension.preferences['client_secret'],
                 extension.preferences['port']
