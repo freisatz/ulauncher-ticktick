@@ -1,6 +1,5 @@
 import os
 import logging
-import requests
 
 from ulauncher.api.client.Extension import Extension
 from ulauncher.api.client.EventListener import EventListener
@@ -12,6 +11,7 @@ from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
 from ulauncher.api.shared.action.ExtensionCustomAction import ExtensionCustomAction
 
 from auth import AuthManager
+from ticktick import TickTickApi
 
 logger = logging.getLogger(__name__)
 
@@ -76,21 +76,13 @@ class KeywordQueryEventListener(EventListener):
 
 
         return RenderResultListAction(items)
-
+    
 
 class ItemEnterEventListener(EventListener):
 
     def push(self, title, access_token):
-        url = 'https://api.ticktick.com/open/v1/task'
-        payload = {
-            'title': title
-        }
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f"Bearer {access_token}" \
-        }
-
-        return requests.post(url, json=payload, headers=headers)
+        api = TickTickApi(access_token)
+        return api.create_task(title)
 
     def on_push_action(self, event, _):
         data = event.get_data()

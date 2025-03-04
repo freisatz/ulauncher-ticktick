@@ -2,12 +2,14 @@
 from http.server import BaseHTTPRequestHandler
 from http.server import HTTPServer
 
-from urllib.parse import urlencode, urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs
 
 import webbrowser
 import requests
 import random
 import string
+
+from ticktick import TickTickApi
 
 class AuthData:
     client_id = ""
@@ -27,19 +29,7 @@ class AuthData:
 class AuthRequestHandler(BaseHTTPRequestHandler):
 
     def fetch_token(self, code, client_id, client_secret, redirect_uri):
-        url = 'https://ticktick.com/oauth/token'
-
-        payload = {
-            'code': code,
-            'grant_type': 'authorization_code',
-            'scope': 'tasks:write',
-            'redirect_uri': redirect_uri
-        }
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-
-        response = requests.post(url, data=urlencode(payload), headers=headers, auth=(client_id, client_secret))
+        response = TickTickApi.request_access_token(client_id, client_secret, redirect_uri, code)
 
         json = response.json()
         return json.get("access_token")
@@ -84,19 +74,6 @@ class AuthManager:
 
     def generate_alphanum(length):        
         return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-    
-    def get_authorization_uri(client_id, redirect_uri, state):
-
-        data = {
-            'scope': 'tasks:write',
-            'client_id': client_id,
-            'state': state,
-            'redirect_uri': redirect_uri,
-            'response_type': 'code'
-        }
-        encoded_data = urlencode(data)
-
-        return f"https://ticktick.com/oauth/authorize?{encoded_data}"
 
     def run(client_id, client_secret, port):
     
@@ -104,7 +81,7 @@ class AuthManager:
       
         state = AuthManager.generate_alphanum(AuthManager.STATE_LENGTH)
 
-        auth_uri = AuthManager.get_authorization_uri(
+        auth_uri = TickTickApi.get_authorization_uri(
             AuthData.client_id, 
             AuthData.get_redirect_uri(),
             state
