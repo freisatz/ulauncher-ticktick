@@ -16,12 +16,14 @@ from ticktick import TickTickApi
 
 logger = logging.getLogger(__name__)
 
+
 def read_token():
     token = ""
     if os.path.isfile("token"):
         f = open("token", "r")
         token = f.read()
     return token
+
 
 def write_token(token):
     f = open("token", "w")
@@ -48,36 +50,41 @@ class KeywordQueryEventListener(EventListener):
 
         if access_token:
 
-            data = {
-                "action": "push",
-                "name": arg_str,
-                "access_token": access_token
-            }
-            items.append(ExtensionResultItem(icon='images/ticktick.png',
-                                            name="Create new task",
-                                            description=arg_str,
-                                            on_enter=ExtensionCustomAction(data)))
+            data = {"action": "push", "name": arg_str, "access_token": access_token}
+            items.append(
+                ExtensionResultItem(
+                    icon="images/ticktick.png",
+                    name="Create new task",
+                    description=arg_str,
+                    on_enter=ExtensionCustomAction(data),
+                )
+            )
 
         else:
-            client_id = extension.preferences['client_id']
-            client_secret = extension.preferences['client_secret']
-            if client_id and client_secret:      
-                data = {
-                    "action": "authorize"
-                }            
-                items.append(ExtensionResultItem(icon='images/ticktick.png',
-                                                name='Retrieve access token',
-                                                description='Click here to retrieve your access token.',
-                                                on_enter=ExtensionCustomAction(data)))
+            client_id = extension.preferences["client_id"]
+            client_secret = extension.preferences["client_secret"]
+            if client_id and client_secret:
+                data = {"action": "authorize"}
+                items.append(
+                    ExtensionResultItem(
+                        icon="images/ticktick.png",
+                        name="Retrieve access token",
+                        description="Click here to retrieve your access token.",
+                        on_enter=ExtensionCustomAction(data),
+                    )
+                )
             else:
-                items.append(ExtensionResultItem(icon='images/ticktick.png',
-                                                name='No credentials',
-                                                description='Provide your credentials in this extension\'s preferences.',
-                                                on_enter=HideWindowAction()))
-
+                items.append(
+                    ExtensionResultItem(
+                        icon="images/ticktick.png",
+                        name="No credentials",
+                        description="Provide your credentials in this extension's preferences.",
+                        on_enter=HideWindowAction(),
+                    )
+                )
 
         return RenderResultListAction(items)
-    
+
 
 class ItemEnterEventListener(EventListener):
 
@@ -90,33 +97,30 @@ class ItemEnterEventListener(EventListener):
         textList = str.split()
         tags = []
         for i in textList:
-            if(i.startswith("#")):
-                x = i.replace("#", '')
+            if i.startswith("#"):
+                x = i.replace("#", "")
                 tags.append(x)
-                str =  print(re.sub(f"( {i}|{i} |{i})", "", str))
-        
+                str = print(re.sub(f"( {i}|{i} |{i})", "", str))
+
         return str, tags
 
     def on_push_action(self, event, _):
         data = event.get_data()
-        self.push(data['name'], data['access_token'])
+        self.push(data["name"], data["access_token"])
 
     def on_auth_action(self, _, extension):
         access_token = AuthManager.run(
-            extension.preferences['client_id'],
-            extension.preferences['client_secret'],
-            extension.preferences['port']
+            extension.preferences["client_id"],
+            extension.preferences["client_secret"],
+            extension.preferences["port"],
         )
         write_token(access_token)
 
     def on_event(self, event, extension):
         data = event.get_data()
-        switch = {
-            "push": self.on_push_action,
-            "authorize": self.on_auth_action
-        }
-        switch.get(data['action'])(event, extension)            
-        
+        switch = {"push": self.on_push_action, "authorize": self.on_auth_action}
+        switch.get(data["action"])(event, extension)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     TickTickExtension().run()
