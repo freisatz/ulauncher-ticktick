@@ -20,7 +20,6 @@ from urllib.parse import urlencode
 
 import webbrowser
 import requests
-import os.path
 import random
 import string
 
@@ -163,13 +162,13 @@ class KeywordQueryEventListener(EventListener):
                     "action": "authorize"
                 }            
                 items.append(ExtensionResultItem(icon='images/ticktick.png',
-                                                name='No access token',
+                                                name='Retrieve access token',
                                                 description='Click here to retrieve your access token.',
                                                 on_enter=ExtensionCustomAction(data)))
             else:
                 items.append(ExtensionResultItem(icon='images/ticktick.png',
                                                 name='No credentials',
-                                                description='Provide your credentials in extension settings',
+                                                description='Provide your credentials in this extension\'s preferences.',
                                                 on_enter=HideWindowAction()))
 
 
