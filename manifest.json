@@ -1,0 +1,39 @@
+{
+  "required_api_version": "2",
+  "name": "TickTick",
+  "description": "Inofficial TickTick extension",
+  "developer_name": "Robin Strehlow",
+  "icon": "images/ticktick.png",
+  "options": {
+    "query_debounce": 0.05
+  },
+  "preferences": [
+    {
+      "id": "ticktick_kw",
+      "type": "keyword",
+      "name": "TickTick",
+      "default_value": "tt"
+    },
+    {
+      "id": "port",
+      "type": "text",
+      "name": "Port",
+      "description": "Port for local webserver launched temporarily for token creation.",
+      "default_value": "8090"
+    },
+    {
+      "id": "client_id",
+      "type": "text",
+      "name": "Client ID",
+      "description": "Your TickTick Client ID",
+      "default_value": ""
+    },
+    {
+      "id": "client_secret",
+      "type": "text",
+      "name": "Client secret",
+      "description": "Your TickTick Client Secret",
+      "default_value": ""
+    }
+  ]
+}
