@@ -3,10 +3,12 @@
 A simple extension that allows to create tasks in [TickTick](https://www.ticktick.com) from within
 [Ulauncher](https://ulauncher.io/).
 
+![ulauncher-ticktick](images/example_ulauncher_ticktick.png)
+
 ## Setup
 
 To authorize with your TickTick account, go to [developer.ticktick.com](https://developer.ticktick.com/manage) and
-select *New App*. Specify some arbitrary *Name* and *App Service URL*. Set the field *OAuth redirect URL* to
+select *New App*. Specify some arbitrary *Name* and *App Service URL*. Then set the field *OAuth redirect URL* to
 
 ```txt
 http://127.0.0.1:8090
