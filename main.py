@@ -9,7 +9,6 @@ from ulauncher.api.shared.event import ItemEnterEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 from ulauncher.api.shared.action.RenderResultListAction import RenderResultListAction
 from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
-from ulauncher.api.shared.action.OpenUrlAction import OpenUrlAction
 from ulauncher.api.shared.action.ExtensionCustomAction import ExtensionCustomAction
 
 from auth import AuthManager
@@ -93,17 +92,25 @@ class ItemEnterEventListener(EventListener):
 
         return requests.post(url, json=payload, headers=headers)
 
+    def on_push_action(self, event, _):
+        data = event.get_data()
+        self.push(data['name'], data['access_token'])
+
+    def on_auth_action(self, _, extension):
+        access_token = AuthManager.run(
+            extension.preferences['client_id'],
+            extension.preferences['client_secret'],
+            extension.preferences['port']
+        )
+        write_token(access_token)
+
     def on_event(self, event, extension):
         data = event.get_data()
-        if data['action'] == 'push':
-            self.push(data['name'], data['access_token'])
-        elif data['action'] == 'authorize':
-            access_token = AuthManager.run(
-                extension.preferences['client_id'],
-                extension.preferences['client_secret'],
-                extension.preferences['port']
-            )
-            write_token(access_token)
+        switch = {
+            "push": self.on_push_action,
+            "authorize": self.on_auth_action
+        }
+        switch.get(data['action'])(event, extension)            
         
 
 if __name__ == '__main__':

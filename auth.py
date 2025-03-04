@@ -2,8 +2,7 @@
 from http.server import BaseHTTPRequestHandler
 from http.server import HTTPServer
 
-from urllib.parse import urlparse, parse_qs
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse, parse_qs
 
 import webbrowser
 import requests
@@ -22,7 +21,7 @@ class AuthData:
     def init(client_id, client_secret, port):
         AuthData.client_id = client_id
         AuthData.client_secret = client_secret
-        AuthData.port = port
+        AuthData.port = int(port)
 
 
 class AuthRequestHandler(BaseHTTPRequestHandler):
@@ -81,27 +80,35 @@ class AuthRequestHandler(BaseHTTPRequestHandler):
 
 class AuthManager:
 
-    access_token = ""
+    STATE_LENGTH = 6
 
-    def run(client_id, client_secret, port):
+    def generate_alphanum(length):        
+        return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
     
-        AuthData.client_id = client_id
-        AuthData.client_secret = client_secret
-        AuthData.port = int(port)
-
-        length = 6        
-        state = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+    def get_authorization_uri(client_id, redirect_uri, state):
 
         data = {
             'scope': 'tasks:write',
             'client_id': client_id,
             'state': state,
-            'redirect_uri': AuthData.get_redirect_uri(),
+            'redirect_uri': redirect_uri,
             'response_type': 'code'
         }
         encoded_data = urlencode(data)
 
-        auth_uri = f"https://ticktick.com/oauth/authorize?{encoded_data}"
+        return f"https://ticktick.com/oauth/authorize?{encoded_data}"
+
+    def run(client_id, client_secret, port):
+    
+        AuthData.init(client_id, client_secret, port)
+      
+        state = AuthManager.generate_alphanum(AuthManager.STATE_LENGTH)
+
+        auth_uri = AuthManager.get_authorization_uri(
+            AuthData.client_id, 
+            AuthData.get_redirect_uri(),
+            state
+        )
 
         webbrowser.open(auth_uri)
 
