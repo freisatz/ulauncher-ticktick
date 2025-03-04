@@ -53,7 +53,7 @@ class KeywordQueryEventListener(EventListener):
                 "access_token": access_token
             }
             items.append(ExtensionResultItem(icon='images/ticktick.png',
-                                            name="Create new card",
+                                            name="Create new task",
                                             description=arg_str,
                                             on_enter=ExtensionCustomAction(data)))
 
