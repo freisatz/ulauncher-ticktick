@@ -44,10 +44,6 @@ class AuthRequestHandler(BaseHTTPRequestHandler):
         code = args["code"][0]
 
         # fetch token from api
-
-        response_code = 403
-        msg = "Continue in Ulauncher."
-
         try:
             AuthData.access_token = self.fetch_token(
                 code,
@@ -56,9 +52,9 @@ class AuthRequestHandler(BaseHTTPRequestHandler):
                 AuthData.get_redirect_uri(),
             )
             response_code = 200
-            msg = "Continue in Ulauncher."
+            msg = "Successfully connected to your TickTick account! Continue in Ulauncher."
         except Exception as err:
-            response_code = 200
+            response_code = 403
             msg = f"Something went wrong:\n{err}"
 
         self.send_response(response_code)
