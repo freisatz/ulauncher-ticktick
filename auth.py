@@ -44,6 +44,9 @@ class AuthRequestHandler(BaseHTTPRequestHandler):
         code = args["code"][0]
 
         # fetch token from api
+        response_code = 0
+        msg = ""
+        
         try:
             AuthData.access_token = self.fetch_token(
                 code,
