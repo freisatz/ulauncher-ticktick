@@ -16,17 +16,23 @@ from ticktick import TickTickApi
 
 logger = logging.getLogger(__name__)
 
+access_token_filename = os.path.join(
+    os.path.expanduser("~"),
+    ".config/ulauncher/ext_preferences/ulauncher-ticktick/access_token",
+)
+
 
 def read_token():
     token = ""
-    if os.path.isfile("token"):
-        f = open("token", "r")
+    if os.path.isfile(access_token_filename):
+        f = open(access_token_filename, "r")
         token = f.read()
     return token
 
 
 def write_token(token):
-    f = open("token", "w")
+    os.makedirs(os.path.dirname(access_token_filename), exist_ok=True)
+    f = open(access_token_filename, "w")
     f.write(token)
     f.close()
 
