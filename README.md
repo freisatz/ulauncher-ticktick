@@ -5,11 +5,6 @@ A simple extension that allows to create tasks in [TickTick](https://www.ticktic
 
 ![ulauncher-ticktick](images/example_ulauncher_ticktick.png)
 
-## Installation
-
-Install the python package `tzlocal` for your python environment. Then clone this repository using *Add extension* in
-the Ulauncher extension settings.
-
 ## Setup
 
 To authorize with your TickTick account, go to [developer.ticktick.com](https://developer.ticktick.com/manage) and
