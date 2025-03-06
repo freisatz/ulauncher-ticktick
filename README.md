@@ -22,10 +22,11 @@ account.
 
 ## Usage
 
-Type the keyword (defaults to `tt`) and some string. This string is used as the title of your task. At this, you can
+Type the keyword (defaults to `tt`) and some string. This string is used as the title of your task. Furthermore, you
+can
 
 - add tags using the syntax `#TAG`
-- add a due date using the syntax `MM/DD[/YYYY]`, `DD.MM.[YYYY]`, `tom[orrow]`, `tod[ay]`
+- add a due date using the syntax `MM/DD[/[YY]YY]`, `DD.MM.[[YY]YY]`, `YYYY-MM-DD`, `tom[orrow]`, `tod[ay]`
 
 ## Contributing
 

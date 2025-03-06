@@ -108,54 +108,80 @@ class ItemEnterEventListener(EventListener):
         date = None
         time = None
 
-        # match European-style dates
+        # match European-style dates DD.MM[.YYYY]
         match = re.search(
-            r"(?<!^\s)([0-2][0-9]|3[0-1])\.(0[0-9]|1[0-2])\.(?:(20[0-9]{2}))?(?!^\s)",
+            r"(?<!^\s)([0-2][0-9]|3[0-1])\.(0[0-9]|1[0-2])\.(?:((?:20)?[0-9]{2}))?(?!^\s)",
             str,
         )
         if match:
             today = datetime.date.today()
             d = int(match.group(1))
             m = int(match.group(2))
-            y = int(match.group(3)) if match.group(3) else today.year
+            y = match.group(3)
             try:
                 date = datetime.date(y, m, d)
 
-                if today > date:
-                    date = datetime.date(y + 1, m, d)
+                if not y:
+                    y = today.year
+                    if today > date:
+                        date = datetime.date(y + 1, m, d)
+                elif int(y) < 2000:
+                    y = int(y) + 2000
+                    date = datetime.date(y, m, d)
 
                 str = self._remove_match(match, str)
             except ValueError:
                 logger.warning("Cannot parse date.")
 
-        # match American-style dates
+        # match American-style dates MM/DD[/YYYY]
         match = re.search(
-            r"(?<!^\s)(0[0-9]|1[0-2])/([0-2][0-9]|3[0-1])(?:(/20[0-9]{2}))?(?!^\s)",
+            r"(?<!^\s)(0[0-9]|1[0-2])/([0-2][0-9]|3[0-1])(?:(?:/)((?:20)?[0-9]{2}))?(?!^\s)",
             str,
         )
         if match:
             today = datetime.date.today()
             d = int(match.group(2))
             m = int(match.group(1))
-            y = int(match.group(3)) if match.group(3) else today.year
+            y = int(match.group(3))
             try:
                 date = datetime.date(y, m, d)
 
-                if today > date:
-                    date = datetime.date(y + 1, m, d)
+                if not y:
+                    y = today.year
+                    if today > date:
+                        date = datetime.date(y + 1, m, d)
+                elif int(y) < 2000:
+                    y = int(y) + 2000
+                    date = datetime.date(y, m, d)
 
                 str = self._remove_match(match, str)
             except ValueError:
                 logger.warning("Cannot parse date.")
 
-        # match textual today
+        # match Unix-style dates YYYY-MM-DD
+        match = re.search(
+            r"(?<!^\s)(20[0-9]{2})-(0[0-9]|1[0-2])-([0-2][0-9]|3[0-1])(?!^\s)",
+            str,
+        )
+        if match:
+            d = int(match.group(3))
+            m = int(match.group(2))
+            y = int(match.group(1))
+            try:
+                date = datetime.date(y, m, d)
+
+                str = self._remove_match(match, str)
+            except ValueError:
+                logger.warning("Cannot parse date.")
+
+        # match textual to[day]
         match = re.search(r"(?<!^\s)(today|tod)(?!^\s)", str, re.IGNORECASE)
         if match:
             date = datetime.date.today()
 
             str = self._remove_match(match, str)
 
-        # match textual tomorrow
+        # match textual to[morrow]
         match = re.search(r"(?<!^\s)(tomorrow|tom)(?!^\s)", str, re.IGNORECASE)
         if match:
             date = datetime.date.today() + datetime.timedelta(days=1)
