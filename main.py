@@ -100,8 +100,8 @@ class ItemEnterEventListener(EventListener):
     def push(self, str, access_token):
         api = TickTickApi(access_token)
         title, _ = self.extract_hashtags(str)
-        title, date, time = self.extract_time(title)
-        return api.create_task(title, date, time, str)
+        title, adate, atime, atimezone = self.extract_time(title)
+        return api.create_task(title, str, adate, atime, atimezone)
 
     def remove_match(self, match, str):
         rep = match.group(0).strip()
@@ -183,7 +183,9 @@ class ItemEnterEventListener(EventListener):
 
             str = self.remove_match(match, str)
 
-        return str, date, time
+        tz_string = datetime.datetime.now(datetime.timezone.utc).astimezone().tzname()
+
+        return str, date, time, tz_string
 
     def extract_hashtags(self, str):
         textList = str.split()

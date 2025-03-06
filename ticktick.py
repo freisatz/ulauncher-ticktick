@@ -1,7 +1,6 @@
 import requests
 import datetime
 import pytz
-import time
 
 from urllib.parse import urlencode
 
@@ -13,21 +12,16 @@ class TickTickApi:
     def __init__(self, access_token=""):
         self.access_token = access_token
 
-    def create_task(self, title, adate, atime, desc):
-
-        url = "https://api.ticktick.com/open/v1/task"
+    def create_task(self, title, desc, adate, atime, atimezone):
 
         reminders = []
-        formatted_date = ""
+        adatetime = None
         isAllDay = False
-
-        tz_name, _ = time.tzname
-        timezone = pytz.timezone(tz_name)
 
         if adate:
 
             if atime:
-                dt = datetime.datetime(
+                adatetime = datetime.datetime(
                     adate.year,
                     adate.month,
                     adate.day,
@@ -37,19 +31,14 @@ class TickTickApi:
                 )
                 reminders.append("TRIGGER:PT0S")
             else:
-                dt = datetime.datetime(adate.year, adate.month, adate.day)
+                adatetime = datetime.datetime(adate.year, adate.month, adate.day)
                 isAllDay = True
 
-        offset = timezone.localize(dt).utcoffset()
-
-        offset_sign = "-" if offset.seconds < 0 else "+"
-        offset_hours = str(int(offset.seconds // 3600)).zfill(2)
-        offset_minutes = str(int(offset.seconds // 60) % 60).zfill(2)
-
-        formatted_date = f"{dt.isoformat()}{offset_sign}{offset_hours}{offset_minutes}"
-
-        print(formatted_date)
-
+        adatetime = pytz.timezone(atimezone).localize(adatetime)
+        
+        formatted_date = adatetime.strftime("%Y-%m-%dT%H:%M:%S%z")
+        
+        url = "https://api.ticktick.com/open/v1/task"
         payload = {
             "title": title,
             "dueDate": formatted_date,
@@ -61,8 +50,6 @@ class TickTickApi:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.access_token}",
         }
-
-        # strftime("%Y-%m-%dT%H:%M:S")
 
         return requests.post(url, json=payload, headers=headers)
 
