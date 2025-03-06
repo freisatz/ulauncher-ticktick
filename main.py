@@ -1,6 +1,7 @@
 import os
 import re
 import logging
+import datetime
 
 from ulauncher.api.client.Extension import Extension
 from ulauncher.api.client.EventListener import EventListener
@@ -97,7 +98,90 @@ class ItemEnterEventListener(EventListener):
     def push(self, str, access_token):
         api = TickTickApi(access_token)
         title, _ = self.extract_hashtags(str)
-        return api.create_task(title, str)
+        title, date, time = self.extract_time(title)
+        return api.create_task(title, date, time, str)
+
+    def remove_match(self, match, str):
+        rep = match.group(0).strip()
+        return re.sub(f"( {rep}|{rep} |{rep})", "", str)
+
+    def extract_time(self, str):
+        date = None
+        time = None
+
+        # match European-style dates
+        match = re.search(
+            r"(?<!^\s)([0-2][0-9]|3[0-1])\.(0[0-9]|1[0-2])\.(?:(20[0-9]{2}))?(?!^\s)",
+            str,
+        )
+        if match:
+            today = datetime.date.today()
+            d = int(match.group(1))
+            m = int(match.group(2))
+            y = int(match.group(3)) if match.group(3) else today.year
+            try:
+                date = datetime.date(y, m, d)
+
+                if today > date:
+                    date = datetime.date(y + 1, m, d)
+
+                str = self.remove_match(match, str)
+            except ValueError:
+                logger.warning("Cannot parse date.")
+
+        # match American-style dates
+        match = re.search(
+            r"(?<!^\s)(0[0-9]|1[0-2])/([0-2][0-9]|3[0-1])(?:(/20[0-9]{2}))?(?!^\s)",
+            str,
+        )
+        if match:
+            today = datetime.date.today()
+            d = int(match.group(2))
+            m = int(match.group(1))
+            y = int(match.group(3)) if match.group(3) else today.year
+            try:
+                date = datetime.date(y, m, d)
+
+                if today > date:
+                    date = datetime.date(y + 1, m, d)
+
+                str = self.remove_match(match, str)
+            except ValueError:
+                logger.warning("Cannot parse date.")
+
+        # match textual today
+        match = re.search(r"(?<!^\s)(today|tod)(?!^\s)", str, re.IGNORECASE)
+        if match:
+            date = datetime.date.today()
+
+            str = self.remove_match(match, str)
+
+        # match textual tomorrow
+        match = re.search(r"(?<!^\s)(tomorrow|tom)(?!^\s)", str, re.IGNORECASE)
+        if match:
+            date = datetime.date.today() + datetime.timedelta(days=1)
+            str = self.remove_match(match, str)
+
+        # match time
+        match = re.search(r"(?:\s|^)([0-1]?[0-9]|2[0-3]):([0-5][0-9])(?:\s|$)", str)
+        if match:
+            h = int(match.group(1))
+            m = int(match.group(2))
+
+            if not date:
+                date = datetime.date.today()
+
+            time = datetime.time(h, m)
+
+            dt_now = datetime.datetime.now()
+            dt_then = datetime.datetime(date.year, date.month, date.day, h, m, 0)
+
+            if dt_now > dt_then:
+                date = date + datetime.timedelta(days=1)
+
+            str = self.remove_match(match, str)
+
+        return str, date, time
 
     def extract_hashtags(self, str):
         textList = str.split()
@@ -110,7 +194,7 @@ class ItemEnterEventListener(EventListener):
 
         return str, tags
 
-    def on_push_action(self, event, _):
+    def on_push_action(self, event, extension):
         data = event.get_data()
         self.push(data["name"], data["access_token"])
 

@@ -5,6 +5,11 @@ A simple extension that allows to create tasks in [TickTick](https://www.ticktic
 
 ![ulauncher-ticktick](images/example_ulauncher_ticktick.png)
 
+## Installation
+
+Install the python package `tzlocal` for your python environment. Then clone this repository using *Add extension* in
+the Ulauncher extension settings.
+
 ## Setup
 
 To authorize with your TickTick account, go to [developer.ticktick.com](https://developer.ticktick.com/manage) and
@@ -19,6 +24,13 @@ specifically, where the port needs to be adapted to whatever changes are made to
 Now copy the *Client ID* and *Client secret* to the extension preferences and issue this extension from within
 Ulauncher. Click *Retrieve access token* and follow the instructions. You should now be connected to your TickTick
 account.
+
+## Usage
+
+Type the keyword (defaults to `tt`) and some string. This string is used as the title of your task. At this, you can
+
+- add tags using the syntax `#TAG`
+- add a due date using the syntax `MM/DD[/YYYY]`, `DD.MM.[YYYY]`, `tom[orrow]`, `tod[ay]`
 
 ## Contributing
 
