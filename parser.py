@@ -160,7 +160,7 @@ class StringParser:
             str = self._remove_from_str(match.group(0), str)
 
         # match time
-        match = re.search(r"(?:\s|^)([0-1]?[0-9]|2[0-3]):([0-5][0-9])(?:\s|$)", str)
+        match = re.search(r"(?<![^\s])([0-1]?[0-9]|2[0-3]):([0-5][0-9])(?![^\s])", str)
         if match:
             h = int(match.group(1))
             m = int(match.group(2))
@@ -185,10 +185,11 @@ class StringParser:
     def extract_hashtags(self, str):
         text_list = str.split()
         tags = []
+        p = r"^#([a-zA-Z0-9-_]+)$"
         for i in text_list:
-            if i.startswith("#"):
-                x = i.replace("#", "")
-                tags.append(x)
-                str = self._remove_from_str(i, str)
+            match = re.search(p, i)
+            if match:
+                tags.append(match.group(1))
+                str = self._remove_from_str(match.group(0), str)
 
         return str, tags

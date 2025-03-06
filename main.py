@@ -97,9 +97,9 @@ class ItemEnterEventListener(EventListener):
 
     def push(self, str, access_token):
         api = TickTickApi(access_token)
-        title, _ = self.parser.extract_hashtags(str)
+        title, tags = self.parser.extract_hashtags(str)
         title, adate, atime, atimezone = self.parser.extract_time(title)
-        return api.create_task(title, str, adate, atime, atimezone)
+        return api.create_task(title, tags, adate, atime, atimezone)
 
     def on_push_action(self, event, _):
         data = event.get_data()
@@ -115,6 +115,7 @@ class ItemEnterEventListener(EventListener):
 
     def on_event(self, event, extension):
         data = event.get_data()
+        logger.info(f"Requested action \"{data['action']}\"")
         switch = {"push": self.on_push_action, "authorize": self.on_auth_action}
         switch.get(data["action"])(event, extension)
 

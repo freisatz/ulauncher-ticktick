@@ -1,8 +1,12 @@
 import requests
 import datetime
 import pytz
+import logging
 
 from urllib.parse import urlencode
+
+
+logger = logging.getLogger(__name__)
 
 
 class TickTickApi:
@@ -12,11 +16,13 @@ class TickTickApi:
     def __init__(self, access_token=""):
         self.access_token = access_token
 
-    def create_task(self, title, desc, adate, atime, atimezone):
+    def create_task(self, title, tags, adate, atime, atimezone):
 
         reminders = []
         isAllDay = False
         formatted_date = ""
+
+        desc = " ".join([f"#{tag}" for tag in tags])
 
         if adate:
 
@@ -40,7 +46,14 @@ class TickTickApi:
 
             formatted_date = adatetime.strftime("%Y-%m-%dT%H:%M:%S%z")
 
-        print(formatted_date)
+        logger.debug(f"title: {title}")
+        logger.debug(f"dueDate: {formatted_date}")
+        logger.debug(f"isAllDay: {isAllDay}")
+        logger.debug(f"desc: {desc}")
+
+        if not title.strip():
+            logger.debug(f"Creation of task is skipped as there is no title given.")
+            return
 
         url = "https://api.ticktick.com/open/v1/task"
         payload = {
