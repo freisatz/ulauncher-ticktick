@@ -56,13 +56,15 @@ class KeywordQueryEventListener(EventListener):
         items = []
 
         if access_token:
-
+            desc = ""
+            if len(arg_str) == 0:
+                desc = "Type in a task title and press Enter..."
             data = {"action": "push", "name": arg_str, "access_token": access_token}
             items.append(
                 ExtensionResultItem(
                     icon="images/ticktick.png",
                     name="Create new task",
-                    description=arg_str,
+                    description=desc,
                     on_enter=ExtensionCustomAction(data),
                 )
             )
@@ -194,7 +196,7 @@ class ItemEnterEventListener(EventListener):
 
         return str, tags
 
-    def on_push_action(self, event, extension):
+    def on_push_action(self, event, _):
         data = event.get_data()
         self.push(data["name"], data["access_token"])
 
