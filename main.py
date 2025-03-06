@@ -17,40 +17,37 @@ from ticktick import TickTickApi
 
 logger = logging.getLogger(__name__)
 
-access_token_filename = os.path.join(
-    os.path.expanduser("~"),
-    ".config/ulauncher/ext_preferences/ulauncher-ticktick/access_token",
-)
-
-
-def read_token():
-    token = ""
-    if os.path.isfile(access_token_filename):
-        f = open(access_token_filename, "r")
-        token = f.read()
-    return token
-
-
-def write_token(token):
-    os.makedirs(os.path.dirname(access_token_filename), exist_ok=True)
-    f = open(access_token_filename, "w")
-    f.write(token)
-    f.close()
-
 
 class TickTickExtension(Extension):
+
+    access_token_filename = os.path.expanduser(
+        "~/.config/ulauncher/ext_preferences/ulauncher-ticktick/access_token"
+    )
 
     def __init__(self):
         super(TickTickExtension, self).__init__()
         self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
         self.subscribe(ItemEnterEvent, ItemEnterEventListener())
 
+    def read_token(self):
+        token = ""
+        if os.path.isfile(self.access_token_filename):
+            f = open(self.access_token_filename, "r")
+            token = f.read()
+        return token
+
+    def write_token(self, token):
+        os.makedirs(os.path.dirname(self.access_token_filename), exist_ok=True)
+        f = open(self.access_token_filename, "w")
+        f.write(token)
+        f.close()
+
 
 class KeywordQueryEventListener(EventListener):
 
-    def on_event(self, event, extension):
+    def on_event(self, event, extension: TickTickExtension):
 
-        access_token = read_token()
+        access_token = extension.read_token()
         arg_str = event.get_argument() if event.get_argument() else ""
 
         items = []
@@ -99,15 +96,15 @@ class ItemEnterEventListener(EventListener):
 
     def push(self, str, access_token):
         api = TickTickApi(access_token)
-        title, _ = self.extract_hashtags(str)
-        title, adate, atime, atimezone = self.extract_time(title)
+        title, _ = self._extract_hashtags(str)
+        title, adate, atime, atimezone = self._extract_time(title)
         return api.create_task(title, str, adate, atime, atimezone)
 
-    def remove_match(self, match, str):
+    def _remove_match(self, match, str):
         rep = match.group(0).strip()
         return re.sub(f"( {rep}|{rep} |{rep})", "", str)
 
-    def extract_time(self, str):
+    def _extract_time(self, str):
         date = None
         time = None
 
@@ -127,7 +124,7 @@ class ItemEnterEventListener(EventListener):
                 if today > date:
                     date = datetime.date(y + 1, m, d)
 
-                str = self.remove_match(match, str)
+                str = self._remove_match(match, str)
             except ValueError:
                 logger.warning("Cannot parse date.")
 
@@ -147,7 +144,7 @@ class ItemEnterEventListener(EventListener):
                 if today > date:
                     date = datetime.date(y + 1, m, d)
 
-                str = self.remove_match(match, str)
+                str = self._remove_match(match, str)
             except ValueError:
                 logger.warning("Cannot parse date.")
 
@@ -156,13 +153,13 @@ class ItemEnterEventListener(EventListener):
         if match:
             date = datetime.date.today()
 
-            str = self.remove_match(match, str)
+            str = self._remove_match(match, str)
 
         # match textual tomorrow
         match = re.search(r"(?<!^\s)(tomorrow|tom)(?!^\s)", str, re.IGNORECASE)
         if match:
             date = datetime.date.today() + datetime.timedelta(days=1)
-            str = self.remove_match(match, str)
+            str = self._remove_match(match, str)
 
         # match time
         match = re.search(r"(?:\s|^)([0-1]?[0-9]|2[0-3]):([0-5][0-9])(?:\s|$)", str)
@@ -181,13 +178,13 @@ class ItemEnterEventListener(EventListener):
             if dt_now > dt_then:
                 date = date + datetime.timedelta(days=1)
 
-            str = self.remove_match(match, str)
+            str = self._remove_match(match, str)
 
         tz_string = datetime.datetime.now(datetime.timezone.utc).astimezone().tzname()
 
         return str, date, time, tz_string
 
-    def extract_hashtags(self, str):
+    def _extract_hashtags(self, str):
         textList = str.split()
         tags = []
         for i in textList:
@@ -202,13 +199,13 @@ class ItemEnterEventListener(EventListener):
         data = event.get_data()
         self.push(data["name"], data["access_token"])
 
-    def on_auth_action(self, _, extension):
+    def on_auth_action(self, _, extension: TickTickExtension):
         access_token = AuthManager.run(
             extension.preferences["client_id"],
             extension.preferences["client_secret"],
             extension.preferences["port"],
         )
-        write_token(access_token)
+        extension.write_token(access_token)
 
     def on_event(self, event, extension):
         data = event.get_data()
