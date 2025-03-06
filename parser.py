@@ -7,8 +7,8 @@ logger = logging.getLogger(__name__)
 
 class StringParser:
 
-    def _remove_match(self, match, str):
-        rep = match.group(0).strip()
+    def _remove_from_str(self, search, str):
+        rep = search.strip()
         return re.sub(f"( {rep}|{rep} |{rep})", "", str)
 
     def extract_time(self, str):
@@ -38,7 +38,7 @@ class StringParser:
                         y = int(y) + 2000
                     date = datetime.date(y, m, d)
 
-                str = self._remove_match(match, str)
+                str = self._remove_from_str(match.group(0), str)
             except ValueError:
                 logger.warning("Cannot parse date.")
 
@@ -64,7 +64,7 @@ class StringParser:
                         y = int(y) + 2000
                     date = datetime.date(y, m, d)
 
-                str = self._remove_match(match, str)
+                str = self._remove_from_str(match.group(0), str)
             except ValueError:
                 logger.warning("Cannot parse date.")
 
@@ -80,7 +80,7 @@ class StringParser:
             try:
                 date = datetime.date(y, m, d)
 
-                str = self._remove_match(match, str)
+                str = self._remove_from_str(match.group(0), str)
             except ValueError:
                 logger.warning("Cannot parse date.")
 
@@ -142,7 +142,7 @@ class StringParser:
                         y = int(y) + 2000
                     date = datetime.date(y, m, d)
 
-                str = self._remove_match(match, str)
+                str = self._remove_from_str(match.group(0), str)
             except ValueError:
                 logger.warning("Cannot parse date.")
 
@@ -151,13 +151,13 @@ class StringParser:
         if match:
             date = datetime.date.today()
 
-            str = self._remove_match(match, str)
+            str = self._remove_from_str(match.group(0), str)
 
         # match textual to[morrow]
         match = re.search(r"(?<![^\s])(tomorrow|tom)(?![^\s])", str, re.IGNORECASE)
         if match:
             date = datetime.date.today() + datetime.timedelta(days=1)
-            str = self._remove_match(match, str)
+            str = self._remove_from_str(match.group(0), str)
 
         # match time
         match = re.search(r"(?:\s|^)([0-1]?[0-9]|2[0-3]):([0-5][0-9])(?:\s|$)", str)
@@ -176,19 +176,19 @@ class StringParser:
             if dt_now > dt_then:
                 date = date + datetime.timedelta(days=1)
 
-            str = self._remove_match(match, str)
+            str = self._remove_from_str(match.group(0), str)
 
         tz_string = datetime.datetime.now(datetime.timezone.utc).astimezone().tzname()
 
         return str, date, time, tz_string
 
     def extract_hashtags(self, str):
-        textList = str.split()
+        text_list = str.split()
         tags = []
-        for i in textList:
+        for i in text_list:
             if i.startswith("#"):
                 x = i.replace("#", "")
                 tags.append(x)
-                str = re.sub(f"( {i}|{i} |{i})", "", str)
+                str = self._remove_from_str(i, str)
 
         return str, tags
