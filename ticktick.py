@@ -15,10 +15,12 @@ class TickTickApi:
     def create_task(self, title, desc, adate, atime, atimezone):
 
         reminders = []
-        adatetime = None
         isAllDay = False
+        formatted_date = ""
 
         if adate:
+
+            adatetime = None
 
             if atime:
                 adatetime = datetime.datetime(
@@ -34,10 +36,12 @@ class TickTickApi:
                 adatetime = datetime.datetime(adate.year, adate.month, adate.day)
                 isAllDay = True
 
-        adatetime = pytz.timezone(atimezone).localize(adatetime)
-        
-        formatted_date = adatetime.strftime("%Y-%m-%dT%H:%M:%S%z")
-        
+            adatetime = pytz.timezone(atimezone).localize(adatetime)
+
+            formatted_date = adatetime.strftime("%Y-%m-%dT%H:%M:%S%z")
+
+        print(formatted_date)
+
         url = "https://api.ticktick.com/open/v1/task"
         payload = {
             "title": title,
