@@ -106,7 +106,7 @@ class ItemEnterEventListener(EventListener):
             if i.startswith("#"):
                 x = i.replace("#", "")
                 tags.append(x)
-                str = print(re.sub(f"( {i}|{i} |{i})", "", str))
+                str = re.sub(f"( {i}|{i} |{i})", "", str)
 
         return str, tags
 
