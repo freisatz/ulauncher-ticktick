@@ -17,7 +17,7 @@ class StringParser:
 
         # match European-style dates DD.MM[.YYYY]
         match = re.search(
-            r"(?<!^\s)([0-2][0-9]|3[0-1])\.(0[0-9]|1[0-2])\.(?:((?:20)?[0-9]{2}))?(?!^\s)",
+            r"(?<![^\s])([0-2][0-9]|3[0-1])\.(0[0-9]|1[0-2])\.(?:((?:20)?[0-9]{2}))?(?![^\s])",
             str,
         )
         if match:
@@ -44,7 +44,7 @@ class StringParser:
 
         # match American-style dates MM/DD[/YYYY]
         match = re.search(
-            r"(?<!^\s)(0[0-9]|1[0-2])/([0-2][0-9]|3[0-1])(?:(?:/)((?:20)?[0-9]{2}))?(?!^\s)",
+            r"(?<![^\s])(0[0-9]|1[0-2])/([0-2][0-9]|3[0-1])(?:(?:/)((?:20)?[0-9]{2}))?(?![^\s])",
             str,
         )
         if match:
@@ -68,9 +68,9 @@ class StringParser:
             except ValueError:
                 logger.warning("Cannot parse date.")
 
-        # match Unix-style dates YYYY-MM-DD
+        # match ISO-style dates YYYY-MM-DD
         match = re.search(
-            r"(?<!^\s)(20[0-9]{2})-(0[0-9]|1[0-2])-([0-2][0-9]|3[0-1])(?!^\s)",
+            r"(?<![^\s])(20[0-9]{2})-(0[0-9]|1[0-2])-([0-2][0-9]|3[0-1])(?![^\s])",
             str,
         )
         if match:
@@ -113,9 +113,9 @@ class StringParser:
 
         month_string = "|".join(month_names.keys())
         match = re.search(
-            r"(?<!^\s)("
+            r"(?<![^\s])("
             + month_string
-            + r")(?:\.)?(?:\s+([0-2]?[0-9]|3[0-1])(?:(?:th|rd|st|\.))?(?:\s+((?:20)?[0-9]{2}))?)?(?!^\s)",
+            + r")(?:\.)?(?:\s+([0-2]?[0-9]|3[0-1])(?:(?:th|rd|st|\.))?(?:\s+((?:20)?[0-9]{2}))?)?(?![^\s])",
             str,
             re.IGNORECASE,
         )
@@ -147,14 +147,14 @@ class StringParser:
                 logger.warning("Cannot parse date.")
 
         # match textual to[day]
-        match = re.search(r"(?<!^\s)(today|tod)(?!^\s)", str, re.IGNORECASE)
+        match = re.search(r"(?<![^\s])(today|tod)(?![^\s])", str, re.IGNORECASE)
         if match:
             date = datetime.date.today()
 
             str = self._remove_match(match, str)
 
         # match textual to[morrow]
-        match = re.search(r"(?<!^\s)(tomorrow|tom)(?!^\s)", str, re.IGNORECASE)
+        match = re.search(r"(?<![^\s])(tomorrow|tom)(?![^\s])", str, re.IGNORECASE)
         if match:
             date = datetime.date.today() + datetime.timedelta(days=1)
             str = self._remove_match(match, str)
