@@ -23,40 +23,62 @@ class TickTickExtension(Extension):
     access_token_filename = os.path.expanduser(
         "~/.config/ulauncher/ext_preferences/ulauncher-ticktick/access_token"
     )
+    api = None
+
+    parser = StringParser()
+    project_dicts = dict()
 
     def __init__(self):
         super(TickTickExtension, self).__init__()
+        self.api = TickTickApi(self._read_token())
         self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
         self.subscribe(ItemEnterEvent, ItemEnterEventListener())
 
-    def read_token(self):
+    def _init_projects(self, access_token):
+        api = TickTickApi(access_token)
+        projects = api.get_projects()
+
+        if projects.status_code == 200:
+            json = projects.json()
+            for project in json:
+                self.projects_dict[project["name"]] = project["id"]
+
+    def _read_token(self):
         token = ""
         if os.path.isfile(self.access_token_filename):
             f = open(self.access_token_filename, "r")
             token = f.read()
         return token
 
-    def write_token(self, token):
+    def _write_token(self, token):
         os.makedirs(os.path.dirname(self.access_token_filename), exist_ok=True)
         f = open(self.access_token_filename, "w")
         f.write(token)
         f.close()
+
+    def set_access_token(self, access_token):
+        self.api.access_token = access_token
+        self._write_token(access_token)
+
+    def push(self, str):
+        title, tags = self.parser.extract_hashtags(str)
+        title, adate, atime, atimezone = self.parser.extract_time(title)
+        return self.api.create_task(title, tags, adate, atime, atimezone)
 
 
 class KeywordQueryEventListener(EventListener):
 
     def on_event(self, event, extension: TickTickExtension):
 
-        access_token = extension.read_token()
         arg_str = event.get_argument() if event.get_argument() else ""
 
         items = []
 
-        if access_token:
+        if extension.api.access_token:
             desc = ""
             if len(arg_str) == 0:
                 desc = "Type in a task title and press Enter..."
-            data = {"action": "push", "name": arg_str, "access_token": access_token}
+            data = {"action": "push", "name": arg_str}
             items.append(
                 ExtensionResultItem(
                     icon="images/ticktick.png",
@@ -94,28 +116,9 @@ class KeywordQueryEventListener(EventListener):
 
 class ItemEnterEventListener(EventListener):
 
-    parser = StringParser()
-    project_dicts = dict()
-
-    def _init_projects(self, access_token):
-        api = TickTickApi(access_token)
-        projects = api.get_projects()
-
-        if projects.status_code == 200:
-            json = projects.json()
-            for project in json:
-                self.projects_dict[project["name"]] = project["id"]
-
-    def push(self, str, access_token):
-        api = TickTickApi(access_token)
-
-        title, tags = self.parser.extract_hashtags(str)
-        title, adate, atime, atimezone = self.parser.extract_time(title)
-        return api.create_task(title, tags, adate, atime, atimezone)
-
-    def on_push_action(self, event, _):
+    def on_push_action(self, event, extension):
         data = event.get_data()
-        self.push(data["name"], data["access_token"])
+        extension.push(data["name"])
 
     def on_auth_action(self, _, extension: TickTickExtension):
         access_token = AuthManager.run(
@@ -123,7 +126,7 @@ class ItemEnterEventListener(EventListener):
             extension.preferences["client_secret"],
             extension.preferences["port"],
         )
-        extension.write_token(access_token)
+        extension.set_access_token(access_token)
 
     def on_event(self, event, extension):
         data = event.get_data()
