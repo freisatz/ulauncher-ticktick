@@ -13,6 +13,7 @@ class StringParser:
 
     def extract_project(self, str, projects_dict):
         project_names = []
+        project_id = ""
         for name in projects_dict.keys():
             project_names.append(name)
         match = re.search(
@@ -20,8 +21,9 @@ class StringParser:
             str,
             re.IGNORECASE,
         )
-        project_id = projects_dict.get(match.group(1).lower()) if match else None
-        str = self._remove_from_str(match.group(0), str)
+        if match:
+            project_id = projects_dict.get(match.group(1).lower()) if match else None
+            str = self._remove_from_str(match.group(0), str)
         return str, project_id
 
     def extract_time(self, str):
@@ -98,33 +100,33 @@ class StringParser:
                 logger.warning("Cannot parse date.")
 
         # match textual month
-        month_names = dict()
-        month_names["jan"] = 1
-        month_names["feb"] = 2
-        month_names["mar"] = 3
-        month_names["apr"] = 4
-        month_names["may"] = 5
-        month_names["jun"] = 6
-        month_names["jul"] = 7
-        month_names["aug"] = 8
-        month_names["sep"] = 9
-        month_names["oct"] = 10
-        month_names["nov"] = 11
-        month_names["dec"] = 12
-        month_names["january"] = 1
-        month_names["february"] = 2
-        month_names["march"] = 3
-        month_names["april"] = 4
-        month_names["may"] = 5
-        month_names["june"] = 6
-        month_names["july"] = 7
-        month_names["august"] = 8
-        month_names["september"] = 9
-        month_names["october"] = 10
-        month_names["november"] = 11
-        month_names["december"] = 12
+        target_names = dict()
+        target_names["jan"] = 1
+        target_names["feb"] = 2
+        target_names["mar"] = 3
+        target_names["apr"] = 4
+        target_names["may"] = 5
+        target_names["jun"] = 6
+        target_names["jul"] = 7
+        target_names["aug"] = 8
+        target_names["sep"] = 9
+        target_names["oct"] = 10
+        target_names["nov"] = 11
+        target_names["dec"] = 12
+        target_names["january"] = 1
+        target_names["february"] = 2
+        target_names["march"] = 3
+        target_names["april"] = 4
+        target_names["may"] = 5
+        target_names["june"] = 6
+        target_names["july"] = 7
+        target_names["august"] = 8
+        target_names["september"] = 9
+        target_names["october"] = 10
+        target_names["november"] = 11
+        target_names["december"] = 12
 
-        month_string = "|".join(month_names.keys())
+        month_string = "|".join(target_names.keys())
         match = re.search(
             r"(?<![^\s])("
             + month_string
@@ -135,7 +137,7 @@ class StringParser:
         if match:
             today = datetime.date.today()
             d = match.group(2)
-            m = month_names[match.group(1).lower()]
+            m = target_names[match.group(1).lower()]
             y = match.group(3)
             try:
                 if not d:
@@ -158,6 +160,40 @@ class StringParser:
                 str = self._remove_from_str(match.group(0), str)
             except ValueError:
                 logger.warning("Cannot parse date.")
+
+        # match textual next week|month|year
+        # match textual month
+        target_names = dict()
+        target_names["wk"] = 1
+        target_names["mon"] = 2
+        target_names["yr"] = 3
+        target_names["week"] = 1
+        target_names["month"] = 2
+        target_names["year"] = 3
+
+        match = re.search(
+            r"(?<![^\s])next\s+(" + "|".join(target_names.keys()) + r")(?![^\s])",
+            str,
+            re.IGNORECASE,
+        )
+        if match:
+            key = target_names.get(match.group(1))
+            if key == 1:
+                date = datetime.date.today()
+                days = 7 - date.weekday()
+                date = date + datetime.timedelta(days=days)
+            elif key == 2:
+                date = datetime.date.today()
+                date = datetime.date(
+                    date.year if date.month < 12 else date.year + 1,
+                    date.month % 12 + 1,
+                    1,
+                )
+            elif key == 3:
+                date = datetime.date.today()
+                date = datetime.date(date.year + 1, 1, 1)
+
+            str = self._remove_from_str(match.group(0), str)
 
         # match textual to[day]
         match = re.search(r"(?<![^\s])(today|tod)(?![^\s])", str, re.IGNORECASE)

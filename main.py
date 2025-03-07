@@ -74,6 +74,14 @@ class TickTickExtension(Extension):
         title, project_id = self.parser.extract_project(title, self.projects_dict)
         return self.api.create_task(title, project_id, tags, adate, atime, atimezone)
 
+    def authorize(self):
+        access_token = AuthManager.run(
+            self.preferences["client_id"],
+            self.preferences["client_secret"],
+            self.preferences["port"],
+        )
+        self.set_access_token(access_token)
+
 
 class KeywordQueryEventListener(EventListener):
 
@@ -130,12 +138,7 @@ class ItemEnterEventListener(EventListener):
         extension.push(data["name"])
 
     def on_auth_action(self, _, extension: TickTickExtension):
-        access_token = AuthManager.run(
-            extension.preferences["client_id"],
-            extension.preferences["client_secret"],
-            extension.preferences["port"],
-        )
-        extension.set_access_token(access_token)
+        extension.authorize()
 
     def on_event(self, event, extension):
         data = event.get_data()

@@ -27,8 +27,12 @@ can
 
 - specify the target project using the syntax `~YOUR PROJECT NAME`
 - add tags using the syntax `#TAG`
-- add a due date using the syntax `MM/DD[/[YY]YY]`, `DD.MM.[[YY]YY]`, `YYYY-MM-DD`, `tom[orrow]`, `tod[ay]` or
-  something like `Jan 1st 1970` or `May 4th` or `November`
+- add a due date using the syntax
+  - American-style dates `MM/DD[/[YY]YY]`
+  - European-style dates `DD.MM.[[YY]YY]`
+  - ISO-style dates `YYYY-MM-DD`
+  - a relative statement `tod[ay]`, `tom[orrow]` or `next w[ee]k|mon[th]|y[ea]r`
+  - or something like `November`, `May 4th` or `Jan 1st 1970`
 
 ## Contributing
 
