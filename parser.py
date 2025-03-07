@@ -168,14 +168,13 @@ class StringParser:
             if not date:
                 date = datetime.date.today()
 
+                dt_now = datetime.datetime.now()
+                dt_then = datetime.datetime(date.year, date.month, date.day, h, m)
+
+                if dt_now > dt_then:
+                    date = date + datetime.timedelta(days=1)
+
             time = datetime.time(h, m)
-
-            dt_now = datetime.datetime.now()
-            dt_then = datetime.datetime(date.year, date.month, date.day, h, m, 0)
-
-            if dt_now > dt_then:
-                date = date + datetime.timedelta(days=1)
-
             str = self._remove_from_str(match.group(0), str)
 
         tz_string = datetime.datetime.now(datetime.timezone.utc).astimezone().tzname()
