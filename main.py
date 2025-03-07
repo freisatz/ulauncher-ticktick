@@ -77,17 +77,23 @@ class KeywordQueryEventListener(EventListener):
         extracts = []
         if tags:
             extracts.append(
-                "Task is tagged with " + ",".join([f"#{tag}" for tag in tags])
+                "tag with " + ",".join([f"#{tag}" for tag in tags])
             )
         if adate:
-            extract = f"Task is due {adate.strftime("%x")}"
+            extract = f"set due date to {adate.strftime("%x")}"
             if atime:
                 extract += f", {atime.strftime("%X")}"
             extracts.append(extract)
         if project_name:
-            extracts.append(f"Task is stored in ~{project_name}")
+            extracts.append(f"store in ~{project_name}")
 
-        return "\n".join(extracts)
+        last = extracts.pop()
+        result = ""
+        if len(extracts) > 0:
+            result = ", ".join(extracts)
+            result += " and "
+        result += last
+        return f"{result[0].upper()}{result[1:]}."
 
     def on_event(self, event: KeywordQueryEvent, extension: TickTickExtension):
 
