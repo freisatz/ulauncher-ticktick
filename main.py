@@ -87,13 +87,17 @@ class KeywordQueryEventListener(EventListener):
         if project_name:
             extracts.append(f"store in ~{project_name}")
 
-        last = extracts.pop()
         result = ""
+            
         if len(extracts) > 0:
-            result = ", ".join(extracts)
-            result += " and "
-        result += last
-        return f"{result[0].upper()}{result[1:]}."
+            last = extracts.pop()
+            if len(extracts) > 0:
+                result = ", ".join(extracts)
+                result += " and "
+            result += last
+            result = f"{result[0].upper()}{result[1:]}."
+        
+        return result
 
     def on_event(self, event: KeywordQueryEvent, extension: TickTickExtension):
 
