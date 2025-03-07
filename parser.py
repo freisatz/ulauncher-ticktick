@@ -15,8 +15,13 @@ class StringParser:
         project_names = []
         for name in projects_dict.keys():
             project_names.append(name)
-        match = re.search(r"~(" + "|".join(project_names) + r")", str)
-        project_id = projects_dict.get(match.group(1)) if match else None
+        match = re.search(
+            r"~(" + "|".join(project_names) + r")",
+            str,
+            re.IGNORECASE,
+        )
+        project_id = projects_dict.get(match.group(1).lower()) if match else None
+        str = self._remove_from_str(match.group(0), str)
         return str, project_id
 
     def extract_time(self, str):

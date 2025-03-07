@@ -16,7 +16,7 @@ class TickTickApi:
     def __init__(self, access_token=""):
         self.access_token = access_token
 
-    def create_task(self, title, tags, adate, atime, atimezone):
+    def create_task(self, title, project_id, tags, adate, atime, atimezone):
 
         reminders = []
         isAllDay = False
@@ -47,6 +47,7 @@ class TickTickApi:
             formatted_date = adatetime.strftime("%Y-%m-%dT%H:%M:%S%z")
 
         logger.debug(f"title: {title}")
+        logger.debug(f"projectId: {project_id}")
         logger.debug(f"dueDate: {formatted_date}")
         logger.debug(f"isAllDay: {isAllDay}")
         logger.debug(f"desc: {desc}")
@@ -58,6 +59,7 @@ class TickTickApi:
         url = "https://api.ticktick.com/open/v1/task"
         payload = {
             "title": title,
+            "projectId": project_id,
             "dueDate": formatted_date,
             "isAllDay": isAllDay,
             "reminders": reminders,

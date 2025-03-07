@@ -25,6 +25,7 @@ account.
 Type the keyword (defaults to `tt`) and some string. This string is used as the title of your task. Furthermore, you
 can
 
+- specify the target project using the syntax `~YOUR PROJECT NAME`
 - add tags using the syntax `#TAG`
 - add a due date using the syntax `MM/DD[/[YY]YY]`, `DD.MM.[[YY]YY]`, `YYYY-MM-DD`, `tom[orrow]`, `tod[ay]` or
   something like `Jan 1st 1970` or `May 4th` or `November`

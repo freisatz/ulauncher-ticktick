@@ -20,50 +20,59 @@ logger = logging.getLogger(__name__)
 
 class TickTickExtension(Extension):
 
-    access_token_filename = os.path.expanduser(
+    ACCESS_TOKEN_FILENAME = (
         "~/.config/ulauncher/ext_preferences/ulauncher-ticktick/access_token"
     )
+
     api = None
 
     parser = StringParser()
-    project_dicts = dict()
+    projects_dict = dict()
 
     def __init__(self):
         super(TickTickExtension, self).__init__()
         self.api = TickTickApi(self._read_token())
+        self._init_projects()
         self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
         self.subscribe(ItemEnterEvent, ItemEnterEventListener())
 
-    def _init_projects(self, access_token):
-        api = TickTickApi(access_token)
-        projects = api.get_projects()
+    def _init_projects(self):
+        if self.api.access_token:
+            projects = self.api.get_projects()
 
-        if projects.status_code == 200:
-            json = projects.json()
-            for project in json:
-                self.projects_dict[project["name"]] = project["id"]
+            if projects.status_code == 200:
+                json = projects.json()
+                for project in json:
+                    self.projects_dict[project["name"].lower()] = project["id"]
+
+    def _get_access_token_filename(self):
+        return os.path.expanduser(self.ACCESS_TOKEN_FILENAME)
 
     def _read_token(self):
+        filename = self._get_access_token_filename()
         token = ""
-        if os.path.isfile(self.access_token_filename):
-            f = open(self.access_token_filename, "r")
+        if os.path.isfile(filename):
+            f = open(filename, "r")
             token = f.read()
         return token
 
     def _write_token(self, token):
-        os.makedirs(os.path.dirname(self.access_token_filename), exist_ok=True)
-        f = open(self.access_token_filename, "w")
+        filename = self._get_access_token_filename()
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        f = open(filename, "w")
         f.write(token)
         f.close()
 
     def set_access_token(self, access_token):
         self.api.access_token = access_token
         self._write_token(access_token)
+        self._init_projects()
 
     def push(self, str):
         title, tags = self.parser.extract_hashtags(str)
         title, adate, atime, atimezone = self.parser.extract_time(title)
-        return self.api.create_task(title, tags, adate, atime, atimezone)
+        title, project_id = self.parser.extract_project(title, self.projects_dict)
+        return self.api.create_task(title, project_id, tags, adate, atime, atimezone)
 
 
 class KeywordQueryEventListener(EventListener):
