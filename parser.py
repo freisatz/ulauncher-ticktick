@@ -11,6 +11,14 @@ class StringParser:
         rep = search.strip()
         return re.sub(f"( {rep}|{rep} |{rep})", "", str)
 
+    def extract_project(self, str, projects_dict):
+        project_names = []
+        for name in projects_dict.keys():
+            project_names.append(name)
+        match = re.search(r"~(" + "|".join(project_names) + r")", str)
+        project_id = projects_dict.get(match.group(1)) if match else None
+        return str, project_id
+
     def extract_time(self, str):
         date = None
         time = None

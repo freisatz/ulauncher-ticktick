@@ -1,5 +1,6 @@
 import os
 import logging
+import re
 
 from ulauncher.api.client.Extension import Extension
 from ulauncher.api.client.EventListener import EventListener
@@ -94,9 +95,20 @@ class KeywordQueryEventListener(EventListener):
 class ItemEnterEventListener(EventListener):
 
     parser = StringParser()
+    project_dicts = dict()
+
+    def _init_projects(self, access_token):
+        api = TickTickApi(access_token)
+        projects = api.get_projects()
+
+        if projects.status_code == 200:
+            json = projects.json()
+            for project in json:
+                self.projects_dict[project["name"]] = project["id"]
 
     def push(self, str, access_token):
         api = TickTickApi(access_token)
+
         title, tags = self.parser.extract_hashtags(str)
         title, adate, atime, atimezone = self.parser.extract_time(title)
         return api.create_task(title, tags, adate, atime, atimezone)

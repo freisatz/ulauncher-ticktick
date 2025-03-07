@@ -73,7 +73,7 @@ class TickTickApi:
     def get_authorization_uri(client_id, redirect_uri, state):
 
         data = {
-            "scope": "tasks:write",
+            "scope": "tasks:write tasks:read",
             "client_id": client_id,
             "state": state,
             "redirect_uri": redirect_uri,
@@ -82,6 +82,18 @@ class TickTickApi:
         encoded_data = urlencode(data)
 
         return f"https://ticktick.com/oauth/authorize?{encoded_data}"
+
+    def get_projects(self):
+        url = "https://api.ticktick.com/open/v1/project"
+
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+        }
+
+        return requests.get(
+            url,
+            headers=headers,
+        )
 
     def request_access_token(client_id, client_secret, redirect_uri, code):
         url = "https://ticktick.com/oauth/token"
