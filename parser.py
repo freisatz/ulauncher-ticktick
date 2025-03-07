@@ -7,24 +7,36 @@ logger = logging.getLogger(__name__)
 
 class StringParser:
 
+    projects_dict = dict()
+
     def _remove_from_str(self, search, str):
         rep = search.strip()
         return re.sub(f"( {rep}|{rep} |{rep})", "", str)
 
-    def extract_project(self, str, projects_dict):
+    def init_projects(self, project_array):
+        for project in project_array:
+            self.projects_dict[project["name"].lower()] = (
+                project["id"],
+                project["name"],
+            )
+
+    def extract_project(self, str):
         project_names = []
+        project_name = ""
         project_id = ""
-        for name in projects_dict.keys():
+        for name in self.projects_dict.keys():
             project_names.append(name)
+
         match = re.search(
             r"~(" + "|".join(project_names) + r")",
             str,
             re.IGNORECASE,
         )
         if match:
-            project_id = projects_dict.get(match.group(1).lower()) if match else None
+            project_key = match.group(1).lower()
+            project_id, project_name = self.projects_dict.get(project_key)
             str = self._remove_from_str(match.group(0), str)
-        return str, project_id
+        return str, project_name, project_id
 
     def extract_time(self, str):
         date = None

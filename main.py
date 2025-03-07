@@ -1,6 +1,5 @@
 import os
 import logging
-import re
 
 from ulauncher.api.client.Extension import Extension
 from ulauncher.api.client.EventListener import EventListener
@@ -24,10 +23,8 @@ class TickTickExtension(Extension):
         "~/.config/ulauncher/ext_preferences/ulauncher-ticktick/access_token"
     )
 
-    api = None
-
     parser = StringParser()
-    projects_dict = dict()
+    api = None
 
     def __init__(self):
         super(TickTickExtension, self).__init__()
@@ -41,9 +38,7 @@ class TickTickExtension(Extension):
             projects = self.api.get_projects()
 
             if projects.status_code == 200:
-                json = projects.json()
-                for project in json:
-                    self.projects_dict[project["name"].lower()] = project["id"]
+                self.parser.init_projects(projects.json())
 
     def _get_access_token_filename(self):
         return os.path.expanduser(self.ACCESS_TOKEN_FILENAME)
@@ -68,34 +63,61 @@ class TickTickExtension(Extension):
         self._write_token(access_token)
         self._init_projects()
 
-    def push(self, str):
-        title, tags = self.parser.extract_hashtags(str)
-        title, adate, atime, atimezone = self.parser.extract_time(title)
-        title, project_id = self.parser.extract_project(title, self.projects_dict)
+    def push(self, title, project_id, tags, adate, atime, atimezone):
         return self.api.create_task(title, project_id, tags, adate, atime, atimezone)
 
-    def authorize(self):
-        access_token = AuthManager.run(
-            self.preferences["client_id"],
-            self.preferences["client_secret"],
-            self.preferences["port"],
-        )
+    def authorize(self, client_id, client_secret, port):
+        access_token = AuthManager.run(client_id, client_secret, port)
         self.set_access_token(access_token)
 
 
 class KeywordQueryEventListener(EventListener):
 
-    def on_event(self, event, extension: TickTickExtension):
+    def _prepare_description(self, tags, adate, atime, project_name):
+        extracts = []
+        if tags:
+            extracts.append(
+                "Task is tagged with " + ",".join([f"#{tag}" for tag in tags])
+            )
+        if adate:
+            extract = f"Task is due {adate.strftime("%x")}"
+            if atime:
+                extract += f", {atime.strftime("%X")}"
+            extracts.append(extract)
+        if project_name:
+            extracts.append(f"Task is stored in ~{project_name}")
+
+        return "\n".join(extracts)
+
+    def on_event(self, event: KeywordQueryEvent, extension: TickTickExtension):
 
         arg_str = event.get_argument() if event.get_argument() else ""
 
         items = []
 
         if extension.api.access_token:
+
+            title, tags = extension.parser.extract_hashtags(arg_str)
+            title, adate, atime, atimezone = extension.parser.extract_time(title)
+            title, project_name, project_id = extension.parser.extract_project(title)
+
             desc = ""
-            if len(arg_str) == 0:
+            if len(arg_str) > 0:
+                desc = self._prepare_description(tags, adate, atime, project_name)
+            else:
                 desc = "Type in a task title and press Enter..."
-            data = {"action": "push", "name": arg_str}
+
+            data = {
+                "action": "push",
+                "title": title,
+                "tags": tags,
+                "date": adate,
+                "time": atime,
+                "timezone": atimezone,
+                "project_name": project_name,
+                "project_id": project_id,
+            }
+
             items.append(
                 ExtensionResultItem(
                     icon="images/ticktick.png",
@@ -133,14 +155,25 @@ class KeywordQueryEventListener(EventListener):
 
 class ItemEnterEventListener(EventListener):
 
-    def on_push_action(self, event, extension):
+    def on_push_action(self, event: ItemEnterEvent, extension: TickTickExtension):
         data = event.get_data()
-        extension.push(data["name"])
+        extension.push(
+            data["title"],
+            data["project_id"],
+            data["tags"],
+            data["date"],
+            data["time"],
+            data["timezone"],
+        )
 
-    def on_auth_action(self, _, extension: TickTickExtension):
-        extension.authorize()
+    def on_auth_action(self, _: ItemEnterEvent, extension: TickTickExtension):
+        extension.authorize(
+            extension.preferences["client_id"],
+            extension.preferences["client_secret"],
+            extension.preferences["port"],
+        )
 
-    def on_event(self, event, extension):
+    def on_event(self, event: ItemEnterEvent, extension: TickTickExtension):
         data = event.get_data()
         logger.info(f"Requested action \"{data['action']}\"")
         switch = {"push": self.on_push_action, "authorize": self.on_auth_action}
