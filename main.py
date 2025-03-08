@@ -18,68 +18,41 @@ from parser import StringParser
 logger = logging.getLogger(__name__)
 
 
-class AccessTokenListener:
+class VariableUpdateListener:
 
     def on_update(self, access_token):
         del access_token
         pass
 
 
-class AccessTokenManager:
+class Variable:
 
-    ACCESS_TOKEN_FILENAME = (
-        "~/.config/ulauncher/ext_preferences/ulauncher-ticktick/access_token"
-    )
-
-    access_token = ""
-    is_updated = False
+    value = ""
 
     listeners = []
 
-    def _get_access_token_filename(self):
-        return os.path.expanduser(self.ACCESS_TOKEN_FILENAME)
-
-    def _read_from_file(self):
-        filename = self._get_access_token_filename()
-        token = ""
-        if os.path.isfile(filename):
-            f = open(filename, "r")
-            token = f.read()
-        return token
-
-    def _write_to_file(self, token):
-        filename = self._get_access_token_filename()
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
-        f = open(filename, "w")
-        f.write(token)
-        f.close()
-
-    def _update(self, access_token):
-        self.access_token = access_token
-        self.is_updated = True
+    def notify(self, value):
         for listener in self.listeners:
-            listener.on_update(access_token)
-
-    def init(self):
-        if not self.is_updated:
-            self._update(self._read_from_file())
+            listener.on_update(value)
 
     def get(self):
-        self.init()
-        return self.access_token
+        return self.value
 
-    def set(self, access_token):
-        if self.access_token != access_token:
-            self._write_to_file(access_token)
-            self._update(access_token)
+    def set(self, value):
+        self.notify(value)
+        self.value = value
 
     def subscribe(self, listener):
         self.listeners.append(listener)
 
 
-class TickTickExtension(Extension):
+class TickTickExtension(Extension, VariableUpdateListener):
 
-    access_token_mgr = AccessTokenManager()
+    ACCESS_TOKEN_FILENAME = (
+        "~/.config/ulauncher/ext_preferences/ulauncher-ticktick/access_token"
+    )
+
+    access_token = Variable()
 
     def __init__(self):
         super(TickTickExtension, self).__init__()
@@ -87,22 +60,45 @@ class TickTickExtension(Extension):
         itemEnterEventListener = ItemEnterEventListener()
         keywordQueryEventListener = KeywordQueryEventListener()
 
-        self.access_token_mgr.subscribe(itemEnterEventListener)
-        self.access_token_mgr.subscribe(keywordQueryEventListener)
+        self.access_token.subscribe(itemEnterEventListener)
+        self.access_token.subscribe(keywordQueryEventListener)
 
-        self.access_token_mgr.init()
+        self.access_token.set(self._read_access_token())
+
+        self.access_token.subscribe(self)
 
         self.subscribe(KeywordQueryEvent, keywordQueryEventListener)
         self.subscribe(ItemEnterEvent, itemEnterEventListener)
 
+    def _get_access_token_filename(self):
+        return os.path.expanduser(self.ACCESS_TOKEN_FILENAME)
+
+    def _read_access_token(self):
+        filename = self._get_access_token_filename()
+        access_token = ""
+        if os.path.isfile(filename):
+            f = open(filename, "r")
+            access_token = f.read()
+        return access_token
+
+    def _write_access_token(self, access_token):
+        filename = self._get_access_token_filename()
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        f = open(filename, "w")
+        f.write(access_token)
+        f.close()
+
+    def on_update(self, value):
+        self._write_access_token(value)
+
     def get_access_token(self):
-        return self.access_token_mgr.get()
+        return self.access_token.get()
 
     def set_access_token(self, access_token):
-        self.access_token_mgr.set(access_token)
+        self.access_token.set(access_token)
 
 
-class KeywordQueryEventListener(EventListener, AccessTokenListener):
+class KeywordQueryEventListener(EventListener, VariableUpdateListener):
 
     api = None
     parser = None
@@ -136,13 +132,14 @@ class KeywordQueryEventListener(EventListener, AccessTokenListener):
 
         return result
 
-    def on_update(self, access_token):
-        self.api.access_token = access_token
+    def on_update(self, value):
+        self.api.access_token = value
 
-        response = self.api.get_projects()
+        if value:
+            response = self.api.get_projects()
 
-        if response.ok:
-            self.parser.init_projects(response.json())
+            if response.ok:
+                self.parser.init_projects(response.json())
 
     def on_event(self, event: KeywordQueryEvent, extension: TickTickExtension):
 
@@ -213,7 +210,7 @@ class KeywordQueryEventListener(EventListener, AccessTokenListener):
         return RenderResultListAction(items)
 
 
-class ItemEnterEventListener(EventListener, AccessTokenListener):
+class ItemEnterEventListener(EventListener, VariableUpdateListener):
 
     api = TickTickApi()
 
@@ -239,14 +236,15 @@ class ItemEnterEventListener(EventListener, AccessTokenListener):
         )
         extension.set_access_token(access_token)
 
-    def on_update(self, access_token):
-        self.api.access_token = access_token
+    def on_update(self, value):
+        self.api.access_token = value
 
     def on_event(self, event: ItemEnterEvent, extension: TickTickExtension):
-        data = event.get_data()
-        logger.info(f"Requested action \"{data['action']}\"")
+        action = event.get_data().get("action")
+        logger.info(f'Requested action "{action}"')
         switch = {"create": self._do_create, "authorize": self._do_authorize}
-        switch.get(data["action"])(event, extension)
+        switch.get(action)(event, extension)
+        items = []
 
 
 class PreferencesEventListener(EventListener):
@@ -255,7 +253,7 @@ class PreferencesEventListener(EventListener):
         super().__init__()
 
     def on_event(self, _: PreferencesEvent, extension: TickTickExtension):
-        extension.access_token_mgr.init()
+        extension.access_token.init()
 
 
 if __name__ == "__main__":
