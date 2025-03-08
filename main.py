@@ -244,16 +244,6 @@ class ItemEnterEventListener(EventListener, VariableUpdateListener):
         logger.info(f'Requested action "{action}"')
         switch = {"create": self._do_create, "authorize": self._do_authorize}
         switch.get(action)(event, extension)
-        items = []
-
-
-class PreferencesEventListener(EventListener):
-
-    def __init__(self):
-        super().__init__()
-
-    def on_event(self, _: PreferencesEvent, extension: TickTickExtension):
-        extension.access_token.init()
 
 
 if __name__ == "__main__":
