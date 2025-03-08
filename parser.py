@@ -242,17 +242,29 @@ class StringParser:
 
         return str, date, time, tz_string
 
-    def extract_hashtags(self, str):
-        text_list = str.split()
+    def extract_hashtags(self, string):
+        text_list = string.split()
         tags = []
-        p = r"^#([a-zA-Z0-9-_]+)$"
+        p = r"^#([\w\-_]+)$"
         for i in text_list:
             match = re.search(p, i)
             if match:
                 tags.append(match.group(1))
-                str = self._remove_from_str(match.group(0), str)
+                string = self._remove_from_str(match.group(0), string)
 
-        return str, tags
+        return string, tags
+
+    def extract_priority(self, string):
+
+        priority = ""
+        p = r"(?<![^\s])!(low|medium|high)(?![^\s])"
+
+        match = re.search(p, string, re.IGNORECASE)
+        if match:
+            priority = match.group(1)
+            string = self._remove_from_str(match.group(0), string)
+
+        return string, priority.lower()
 
     def get_project_suggestions(self, arg_str, max_matches=0):
         projects = []

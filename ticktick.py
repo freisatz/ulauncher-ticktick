@@ -16,7 +16,7 @@ class TickTickApi:
     def __init__(self, access_token=""):
         self.access_token = access_token
 
-    def create_task(self, title, project_id, tags, adate, atime, atimezone):
+    def create_task(self, title, project_id, tags, priority, adate, atime, atimezone):
 
         reminders = []
         isAllDay = False
@@ -59,6 +59,7 @@ class TickTickApi:
         url = "https://api.ticktick.com/open/v1/task"
         payload = {
             "title": title,
+            "priority": priority,
             "projectId": project_id,
             "dueDate": formatted_date,
             "isAllDay": isAllDay,
