@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class AccessTokenListener:
 
     def on_update(self, access_token):
+        del access_token
         pass
 
 
@@ -89,9 +90,16 @@ class TickTickExtension(Extension):
         self.access_token_mgr.subscribe(itemEnterEventListener)
         self.access_token_mgr.subscribe(keywordQueryEventListener)
 
+        self.access_token_mgr.init()
+
         self.subscribe(KeywordQueryEvent, keywordQueryEventListener)
         self.subscribe(ItemEnterEvent, itemEnterEventListener)
-        self.subscribe(PreferencesEvent, PreferencesEventListener())
+
+    def get_access_token(self):
+        return self.access_token_mgr.get()
+
+    def set_access_token(self, access_token):
+        self.access_token_mgr.set(access_token)
 
 
 class KeywordQueryEventListener(EventListener, AccessTokenListener):
@@ -142,7 +150,7 @@ class KeywordQueryEventListener(EventListener, AccessTokenListener):
 
         items = []
 
-        if extension.access_token_mgr.get():
+        if extension.get_access_token():
 
             # add item "Create new task"
             title, tags = self.parser.extract_hashtags(arg_str)
@@ -229,7 +237,7 @@ class ItemEnterEventListener(EventListener, AccessTokenListener):
             extension.preferences["client_secret"],
             extension.preferences["port"],
         )
-        extension.access_token_mgr.set(access_token)
+        extension.set_access_token(access_token)
 
     def on_update(self, access_token):
         self.api.access_token = access_token
