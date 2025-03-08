@@ -161,18 +161,33 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
                 )
             )
             
-            base, suggestions = self.parser.get_project_suggestions(arg_str, max_matches=10)
             keyword = extension.preferences["ticktick_kw"]
+            
+            # add project name suggestions item
+            base, suggestions = self.parser.get_project_suggestions(arg_str, max_matches=10)
             
             for suggestion in suggestions:
             
-                # add project name item
                 items.append(
                     ExtensionResultItem(
                         icon="images/ticktick.png",
                         name=f"~{suggestion}",
                         description="",
                         on_enter=SetUserQueryAction(f"{keyword} {base}~{suggestion} "),
+                    )
+                )
+            
+            # add priority suggestions item    
+            base, suggestions = self.parser.get_priority_suggestions(arg_str)
+            
+            for suggestion in suggestions:
+            
+                items.append(
+                    ExtensionResultItem(
+                        icon="images/ticktick.png",
+                        name=f"!{suggestion}",
+                        description="",
+                        on_enter=SetUserQueryAction(f"{keyword} {base}!{suggestion} "),
                     )
                 )
 

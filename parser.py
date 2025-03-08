@@ -288,3 +288,26 @@ class StringParser:
             return base, projects
 
         return arg_str, []
+    
+    def get_priority_suggestions(self, arg_str,  max_matches=0):
+        priorities = []
+        num_matches = 0
+        arg_len = len(arg_str)
+
+        match = re.search(r"(?<![^\s])!(\w{0,6})$", arg_str, re.IGNORECASE)
+
+        if match:
+            search = match.group(1)
+            base = arg_str[0 : arg_len - len(search) - 1]
+            for priority in ["low", "medium", "high"]:
+                if len(search) < len(priority) and re.match(
+                    search, priority, re.IGNORECASE
+                ):
+                    priorities.append(priority)
+                    num_matches += 1
+                    if num_matches == max_matches:
+                        break
+
+            return base, priorities
+
+        return arg_str, []
