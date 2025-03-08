@@ -83,10 +83,12 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
         self.api = TickTickApi()
         self.parser = StringParser()
 
-    def _compile_description(self, tags, adate, atime, project_name):
+    def _compile_description(self, tags, priority, adate, atime, project_name):
         extracts = []
         if tags:
             extracts.append("tag with " + ",".join([f"#{tag}" for tag in tags]))
+        if priority:
+            extracts.append(f"set priority to {priority}")
         if adate:
             extract = f"set due date to {adate.strftime("%x")}"
             if atime:
@@ -126,19 +128,23 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
 
             # add item "Create new task"
             title, tags = self.parser.extract_hashtags(arg_str)
+            title, priority = self.parser.extract_priority(arg_str)
             title, adate, atime, atimezone = self.parser.extract_time(title)
             title, project_name, project_id = self.parser.extract_project(title)
 
             desc = ""
             if len(arg_str) > 0:
-                desc = self._compile_description(tags, adate, atime, project_name)
+                desc = self._compile_description(tags, priority, adate, atime, project_name)
             else:
                 desc = "Type in a task title and press Enter..."
+
+            priority_dict = {"low": 1, "medium": 2, "high": 3}
 
             data = {
                 "action": "create",
                 "title": title,
                 "tags": tags,
+                "priority": priority_dict.get(priority, 0),
                 "date": adate,
                 "time": atime,
                 "timezone": atimezone,
@@ -213,6 +219,7 @@ class ItemEnterEventListener(EventListener, VariableUpdateListener):
             data["title"],
             data["project_id"],
             data["tags"],
+            data["priority"],
             data["date"],
             data["time"],
             data["timezone"],
