@@ -5,8 +5,8 @@ from ulauncher.api.client.Extension import Extension
 from ulauncher.api.client.EventListener import EventListener
 from ulauncher.api.shared.event import KeywordQueryEvent
 from ulauncher.api.shared.event import ItemEnterEvent
-from ulauncher.api.shared.event import PreferencesEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
+from ulauncher.api.shared.action.SetUserQueryAction import SetUserQueryAction
 from ulauncher.api.shared.action.RenderResultListAction import RenderResultListAction
 from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
 from ulauncher.api.shared.action.ExtensionCustomAction import ExtensionCustomAction
@@ -154,6 +154,21 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
                     on_enter=ExtensionCustomAction(data),
                 )
             )
+            
+            base, suggestions = self.parser.get_project_suggestions(arg_str, max_matches=10)
+            keyword = extension.preferences["ticktick_kw"]
+            
+            for suggestion in suggestions:
+            
+                # add project name item
+                items.append(
+                    ExtensionResultItem(
+                        icon="images/ticktick.png",
+                        name=f"~{suggestion}",
+                        description="",
+                        on_enter=SetUserQueryAction(f"{keyword} {base}~{suggestion} "),
+                    )
+                )
 
         else:
 

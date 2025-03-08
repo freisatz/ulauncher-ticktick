@@ -28,7 +28,7 @@ class StringParser:
             project_names.append(name)
 
         match = re.search(
-            r"~(" + "|".join(project_names) + r")",
+            r"(?<![^\s])~(" + "|".join(project_names) + r")",
             str,
             re.IGNORECASE,
         )
@@ -253,3 +253,26 @@ class StringParser:
                 str = self._remove_from_str(match.group(0), str)
 
         return str, tags
+
+    def get_project_suggestions(self, arg_str, max_matches=0):
+        projects = []
+        num_matches = 0
+        arg_len = len(arg_str)
+
+        match = re.search(r"(?<![^\s])~([\w_\- ]*)$", arg_str, re.IGNORECASE)
+
+        if match:
+            search = match.group(1)
+            base = arg_str[0 : arg_len - len(search) - 1]
+            for project in self.projects_dict.values():
+                if len(search) < len(project[1]) and re.match(
+                    search, project[1], re.IGNORECASE
+                ):
+                    projects.append(project[1])
+                    num_matches += 1
+                    if num_matches == max_matches:
+                        break
+
+            return base, projects
+
+        return arg_str, []
