@@ -5,6 +5,7 @@ from ulauncher.api.client.Extension import Extension
 from ulauncher.api.client.EventListener import EventListener
 from ulauncher.api.shared.event import KeywordQueryEvent
 from ulauncher.api.shared.event import ItemEnterEvent
+from ulauncher.api.shared.event import PreferencesEvent
 from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 from ulauncher.api.shared.action.RenderResultListAction import RenderResultListAction
 from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
@@ -13,72 +14,79 @@ from ulauncher.api.shared.action.ExtensionCustomAction import ExtensionCustomAct
 from auth import AuthManager
 from ticktick import TickTickApi
 from parser import StringParser
+from variable import Variable, VariableUpdateListener
 
 logger = logging.getLogger(__name__)
 
 
-class TickTickExtension(Extension):
+class TickTickExtension(Extension, VariableUpdateListener):
 
     ACCESS_TOKEN_FILENAME = (
         "~/.config/ulauncher/ext_preferences/ulauncher-ticktick/access_token"
     )
 
-    parser = StringParser()
-    api = None
+    access_token = Variable()
 
     def __init__(self):
         super(TickTickExtension, self).__init__()
-        self.api = TickTickApi(self._read_token())
-        self._init_projects()
-        self.subscribe(KeywordQueryEvent, KeywordQueryEventListener())
-        self.subscribe(ItemEnterEvent, ItemEnterEventListener())
 
-    def _init_projects(self):
-        if self.api.access_token:
-            projects = self.api.get_projects()
+        itemEnterEventListener = ItemEnterEventListener()
+        keywordQueryEventListener = KeywordQueryEventListener()
 
-            if projects.status_code == 200:
-                self.parser.init_projects(projects.json())
+        self.access_token.subscribe(itemEnterEventListener)
+        self.access_token.subscribe(keywordQueryEventListener)
+
+        self.access_token.set(self._read_access_token())
+
+        self.access_token.subscribe(self)
+
+        self.subscribe(KeywordQueryEvent, keywordQueryEventListener)
+        self.subscribe(ItemEnterEvent, itemEnterEventListener)
 
     def _get_access_token_filename(self):
         return os.path.expanduser(self.ACCESS_TOKEN_FILENAME)
 
-    def _read_token(self):
+    def _read_access_token(self):
         filename = self._get_access_token_filename()
-        token = ""
+        access_token = ""
         if os.path.isfile(filename):
+            logger.debug(f'Read access token from "{filename}"')
             f = open(filename, "r")
-            token = f.read()
-        return token
+            access_token = f.read()
+        return access_token
 
-    def _write_token(self, token):
+    def _write_access_token(self, access_token):
         filename = self._get_access_token_filename()
+        logger.debug(f'Write access token to "{filename}"')
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         f = open(filename, "w")
-        f.write(token)
+        f.write(access_token)
         f.close()
 
+    def on_update(self, value):
+        self._write_access_token(value)
+
+    def get_access_token(self):
+        return self.access_token.get()
+
     def set_access_token(self, access_token):
-        self.api.access_token = access_token
-        self._write_token(access_token)
-        self._init_projects()
-
-    def push(self, title, project_id, tags, adate, atime, atimezone):
-        return self.api.create_task(title, project_id, tags, adate, atime, atimezone)
-
-    def authorize(self, client_id, client_secret, port):
-        access_token = AuthManager.run(client_id, client_secret, port)
-        self.set_access_token(access_token)
+        self.access_token.set(access_token)
 
 
-class KeywordQueryEventListener(EventListener):
+class KeywordQueryEventListener(EventListener, VariableUpdateListener):
 
-    def _prepare_description(self, tags, adate, atime, project_name):
+    api = None
+    parser = None
+
+    def __init__(self):
+        super().__init__()
+        self.api = TickTickApi()
+        self.parser = StringParser()
+
+    def _compile_description(self, tags, adate, atime, project_name):
         extracts = []
         if tags:
-            extracts.append(
-                "tag with " + ",".join([f"#{tag}" for tag in tags])
-            )
+            extracts.append("tag with " + ",".join([f"#{tag}" for tag in tags]))
         if adate:
             extract = f"set due date to {adate.strftime("%x")}"
             if atime:
@@ -88,7 +96,7 @@ class KeywordQueryEventListener(EventListener):
             extracts.append(f"store in ~{project_name}")
 
         result = ""
-            
+
         if len(extracts) > 0:
             last = extracts.pop()
             if len(extracts) > 0:
@@ -96,8 +104,17 @@ class KeywordQueryEventListener(EventListener):
                 result += " and "
             result += last
             result = f"{result[0].upper()}{result[1:]}."
-        
+
         return result
+
+    def on_update(self, value):
+        self.api.access_token = value
+
+        if value:
+            response = self.api.get_projects()
+
+            if response.ok:
+                self.parser.init_projects(response.json())
 
     def on_event(self, event: KeywordQueryEvent, extension: TickTickExtension):
 
@@ -105,20 +122,21 @@ class KeywordQueryEventListener(EventListener):
 
         items = []
 
-        if extension.api.access_token:
+        if extension.get_access_token():
 
-            title, tags = extension.parser.extract_hashtags(arg_str)
-            title, adate, atime, atimezone = extension.parser.extract_time(title)
-            title, project_name, project_id = extension.parser.extract_project(title)
+            # add item "Create new task"
+            title, tags = self.parser.extract_hashtags(arg_str)
+            title, adate, atime, atimezone = self.parser.extract_time(title)
+            title, project_name, project_id = self.parser.extract_project(title)
 
             desc = ""
             if len(arg_str) > 0:
-                desc = self._prepare_description(tags, adate, atime, project_name)
+                desc = self._compile_description(tags, adate, atime, project_name)
             else:
                 desc = "Type in a task title and press Enter..."
 
             data = {
-                "action": "push",
+                "action": "create",
                 "title": title,
                 "tags": tags,
                 "date": adate,
@@ -138,9 +156,12 @@ class KeywordQueryEventListener(EventListener):
             )
 
         else:
+
             client_id = extension.preferences["client_id"]
             client_secret = extension.preferences["client_secret"]
+
             if client_id and client_secret:
+                # add item "Retrieve access token"
                 data = {"action": "authorize"}
                 items.append(
                     ExtensionResultItem(
@@ -151,6 +172,7 @@ class KeywordQueryEventListener(EventListener):
                     )
                 )
             else:
+                # add item "No credentials"
                 items.append(
                     ExtensionResultItem(
                         icon="images/ticktick.png",
@@ -163,11 +185,16 @@ class KeywordQueryEventListener(EventListener):
         return RenderResultListAction(items)
 
 
-class ItemEnterEventListener(EventListener):
+class ItemEnterEventListener(EventListener, VariableUpdateListener):
 
-    def on_push_action(self, event: ItemEnterEvent, extension: TickTickExtension):
+    api = TickTickApi()
+
+    def __init__(self):
+        super().__init__()
+
+    def _do_create(self, event: ItemEnterEvent, _: TickTickExtension):
         data = event.get_data()
-        extension.push(
+        self.api.create_task(
             data["title"],
             data["project_id"],
             data["tags"],
@@ -176,18 +203,22 @@ class ItemEnterEventListener(EventListener):
             data["timezone"],
         )
 
-    def on_auth_action(self, _: ItemEnterEvent, extension: TickTickExtension):
-        extension.authorize(
+    def _do_authorize(self, _: ItemEnterEvent, extension: TickTickExtension):
+        access_token = AuthManager.run(
             extension.preferences["client_id"],
             extension.preferences["client_secret"],
             extension.preferences["port"],
         )
+        extension.set_access_token(access_token)
+
+    def on_update(self, value):
+        self.api.access_token = value
 
     def on_event(self, event: ItemEnterEvent, extension: TickTickExtension):
-        data = event.get_data()
-        logger.info(f"Requested action \"{data['action']}\"")
-        switch = {"push": self.on_push_action, "authorize": self.on_auth_action}
-        switch.get(data["action"])(event, extension)
+        action = event.get_data().get("action")
+        logger.info(f'Requested action "{action}"')
+        switch = {"create": self._do_create, "authorize": self._do_authorize}
+        switch.get(action)(event, extension)
 
 
 if __name__ == "__main__":
