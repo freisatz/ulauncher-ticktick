@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 class VariableUpdateListener:
 
-    def on_update(self, access_token):
-        del access_token
+    def on_update(self, value):
+        del value
         pass
 
 
@@ -77,12 +77,14 @@ class TickTickExtension(Extension, VariableUpdateListener):
         filename = self._get_access_token_filename()
         access_token = ""
         if os.path.isfile(filename):
+            logger.debug(f'Read access token from "{filename}"')
             f = open(filename, "r")
             access_token = f.read()
         return access_token
 
     def _write_access_token(self, access_token):
         filename = self._get_access_token_filename()
+        logger.debug(f'Write access token to "{filename}"')
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         f = open(filename, "w")
         f.write(access_token)
