@@ -79,26 +79,30 @@ class AccessTokenManager:
 class TickTickExtension(Extension):
 
     access_token_mgr = AccessTokenManager()
-    
+
     def __init__(self):
         super(TickTickExtension, self).__init__()
 
-        self.subscribe(KeywordQueryEvent, KeywordQueryEventListener(self.access_token_mgr))
-        self.subscribe(ItemEnterEvent, ItemEnterEventListener(self.access_token_mgr))
+        itemEnterEventListener = ItemEnterEventListener()
+        keywordQueryEventListener = KeywordQueryEventListener()
+
+        self.access_token_mgr.subscribe(itemEnterEventListener)
+        self.access_token_mgr.subscribe(keywordQueryEventListener)
+
+        self.subscribe(KeywordQueryEvent, keywordQueryEventListener)
+        self.subscribe(ItemEnterEvent, itemEnterEventListener)
         self.subscribe(PreferencesEvent, PreferencesEventListener())
 
 
-class KeywordQueryEventListener(EventListener):
+class KeywordQueryEventListener(EventListener, AccessTokenListener):
 
     api = None
     parser = None
 
-    def __init__(self, access_token_mgr):
+    def __init__(self):
         super().__init__()
         self.api = TickTickApi()
         self.parser = StringParser()
-
-        access_token_mgr.subscribe(self)
 
     def _compile_description(self, tags, adate, atime, project_name):
         extracts = []
@@ -201,13 +205,12 @@ class KeywordQueryEventListener(EventListener):
         return RenderResultListAction(items)
 
 
-class ItemEnterEventListener(EventListener):
+class ItemEnterEventListener(EventListener, AccessTokenListener):
 
     api = TickTickApi()
 
-    def __init__(self, access_token_mgr):
+    def __init__(self):
         super().__init__()
-        access_token_mgr.subscribe(self)
 
     def _do_create(self, event: ItemEnterEvent, _: TickTickExtension):
         data = event.get_data()
@@ -243,7 +246,7 @@ class PreferencesEventListener(EventListener):
     def __init__(self):
         super().__init__()
 
-    def on_event(self, _:PreferencesEvent, extension : TickTickExtension):
+    def on_event(self, _: PreferencesEvent, extension: TickTickExtension):
         extension.access_token_mgr.init()
 
 
