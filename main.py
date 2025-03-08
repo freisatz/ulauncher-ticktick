@@ -128,7 +128,7 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
 
             # add item "Create new task"
             title, tags = self.parser.extract_hashtags(arg_str)
-            title, priority = self.parser.extract_priority(arg_str)
+            title, priority = self.parser.extract_priority(title)
             title, adate, atime, atimezone = self.parser.extract_time(title)
             title, project_name, project_id = self.parser.extract_project(title)
 
