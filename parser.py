@@ -256,15 +256,24 @@ class StringParser:
 
     def extract_priority(self, string):
 
+        priority_dict = {
+            "low": "low",
+            "l": "low",
+            "medium": "medium",
+            "m": "medium",
+            "high": "high",
+            "h": "high",
+        }
+
         priority = ""
-        p = r"(?<![^\s])!(low|medium|high)(?![^\s])"
+        p = r"(?<![^\s])!(low|medium|high|l|m|h)(?![^\s])"
 
         match = re.search(p, string, re.IGNORECASE)
         if match:
-            priority = match.group(1)
+            priority = priority_dict.get(match.group(1).lower(), "")
             string = self._remove_from_str(match.group(0), string)
 
-        return string, priority.lower()
+        return string, priority
 
     def get_project_suggestions(self, arg_str, max_matches=0):
         projects = []
@@ -288,8 +297,8 @@ class StringParser:
             return base, projects
 
         return arg_str, []
-    
-    def get_priority_suggestions(self, arg_str,  max_matches=0):
+
+    def get_priority_suggestions(self, arg_str, max_matches=0):
         priorities = []
         num_matches = 0
         arg_len = len(arg_str)

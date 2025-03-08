@@ -27,7 +27,8 @@ can
 
 - specify the target project using the syntax `~YOUR PROJECT NAME`
 - add tags using the syntax `#TAG`
-- add a due date using the syntax
+- set a priority using the syntax `!PRIO`, where `PRIO` is one in `l[ow]`, `m[edium]` or `h[igh]`
+- set a due date using the syntax
   - American-style dates `MM/DD[/[YY]YY]`
   - European-style dates `DD.MM.[[YY]YY]`
   - ISO-style dates `YYYY-MM-DD`
