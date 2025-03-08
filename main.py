@@ -18,6 +18,12 @@ from parser import StringParser
 logger = logging.getLogger(__name__)
 
 
+class AccessTokenListener:
+
+    def on_update(self, access_token):
+        pass
+
+
 class AccessTokenManager:
 
     ACCESS_TOKEN_FILENAME = (
@@ -53,9 +59,12 @@ class AccessTokenManager:
         for listener in self.listeners:
             listener.on_update(access_token)
 
-    def get(self):
+    def init(self):
         if not self.is_updated:
             self._update(self._read_from_file())
+
+    def get(self):
+        self.init()
         return self.access_token
 
     def set(self, access_token):
@@ -63,33 +72,33 @@ class AccessTokenManager:
             self._write_to_file(access_token)
             self._update(access_token)
 
-    def add_listener(self, listener):
+    def subscribe(self, listener):
         self.listeners.append(listener)
 
 
 class TickTickExtension(Extension):
 
+    access_token_mgr = AccessTokenManager()
+    
     def __init__(self):
         super(TickTickExtension, self).__init__()
 
-        access_token_mgr = AccessTokenManager()
-        self.subscribe(KeywordQueryEvent, KeywordQueryEventListener(access_token_mgr))
-        self.subscribe(ItemEnterEvent, ItemEnterEventListener(access_token_mgr))
+        self.subscribe(KeywordQueryEvent, KeywordQueryEventListener(self.access_token_mgr))
+        self.subscribe(ItemEnterEvent, ItemEnterEventListener(self.access_token_mgr))
+        self.subscribe(PreferencesEvent, PreferencesEventListener())
 
 
 class KeywordQueryEventListener(EventListener):
 
     api = None
     parser = None
-    access_token_mgr = None
 
     def __init__(self, access_token_mgr):
         super().__init__()
-        self.access_token_mgr = access_token_mgr
         self.api = TickTickApi()
         self.parser = StringParser()
 
-        self.access_token_mgr.add_listener(self)
+        access_token_mgr.subscribe(self)
 
     def _compile_description(self, tags, adate, atime, project_name):
         extracts = []
@@ -129,7 +138,7 @@ class KeywordQueryEventListener(EventListener):
 
         items = []
 
-        if self.access_token_mgr.get():
+        if extension.access_token_mgr.get():
 
             # add item "Create new task"
             title, tags = self.parser.extract_hashtags(arg_str)
@@ -194,15 +203,13 @@ class KeywordQueryEventListener(EventListener):
 
 class ItemEnterEventListener(EventListener):
 
-    access_token_mgr = None
     api = TickTickApi()
 
     def __init__(self, access_token_mgr):
         super().__init__()
-        self.access_token_mgr = access_token_mgr
-        self.access_token_mgr.add_listener(self)
+        access_token_mgr.subscribe(self)
 
-    def _do_create(self, event: ItemEnterEvent, extension: TickTickExtension):
+    def _do_create(self, event: ItemEnterEvent, _: TickTickExtension):
         data = event.get_data()
         self.api.create_task(
             data["title"],
@@ -219,7 +226,7 @@ class ItemEnterEventListener(EventListener):
             extension.preferences["client_secret"],
             extension.preferences["port"],
         )
-        self.access_token_mgr.set(access_token)
+        extension.access_token_mgr.set(access_token)
 
     def on_update(self, access_token):
         self.api.access_token = access_token
@@ -229,6 +236,15 @@ class ItemEnterEventListener(EventListener):
         logger.info(f"Requested action \"{data['action']}\"")
         switch = {"create": self._do_create, "authorize": self._do_authorize}
         switch.get(data["action"])(event, extension)
+
+
+class PreferencesEventListener(EventListener):
+
+    def __init__(self):
+        super().__init__()
+
+    def on_event(self, _:PreferencesEvent, extension : TickTickExtension):
+        extension.access_token_mgr.init()
 
 
 if __name__ == "__main__":
