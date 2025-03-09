@@ -12,6 +12,7 @@
       "id": "ticktick_kw",
       "type": "keyword",
       "name": "TickTick",
+      "description": "Add tasks to TickTick",
       "default_value": "tt"
     },
     {
