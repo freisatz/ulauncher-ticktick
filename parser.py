@@ -28,7 +28,7 @@ class StringParser:
             project_names.append(name)
 
         match = re.search(
-            r"(?<![^\s])~(" + "|".join(project_names) + r")",
+            r"(?<![^\s])~(" + "|".join(project_names) + r")(?![^\s])",
             str,
             re.IGNORECASE,
         )
