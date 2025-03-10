@@ -9,6 +9,7 @@ from ulauncher.api.shared.item.ExtensionResultItem import ExtensionResultItem
 from ulauncher.api.shared.item.ExtensionSmallResultItem import ExtensionSmallResultItem
 from ulauncher.api.shared.action.SetUserQueryAction import SetUserQueryAction
 from ulauncher.api.shared.action.RenderResultListAction import RenderResultListAction
+from ulauncher.api.shared.action.DoNothingAction import DoNothingAction
 from ulauncher.api.shared.action.HideWindowAction import HideWindowAction
 from ulauncher.api.shared.action.ExtensionCustomAction import ExtensionCustomAction
 
@@ -126,12 +127,14 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
         items = []
 
         if extension.get_access_token():
-                        
+
             # add project name suggestions item
-            base, suggestions = self.parser.get_project_suggestions(event.get_query(), max_matches=10)
-            
+            base, suggestions = self.parser.get_project_suggestions(
+                event.get_query(), max_matches=10
+            )
+
             for suggestion in suggestions:
-            
+
                 items.append(
                     ExtensionSmallResultItem(
                         icon="images/ticktick.png",
@@ -140,12 +143,12 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
                         on_enter=SetUserQueryAction(f"{base}~{suggestion} "),
                     )
                 )
-            
-            # add priority suggestions item    
+
+            # add priority suggestions item
             base, suggestions = self.parser.get_priority_suggestions(event.get_query())
-            
+
             for suggestion in suggestions:
-            
+
                 items.append(
                     ExtensionSmallResultItem(
                         icon="images/ticktick.png",
@@ -154,7 +157,7 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
                         on_enter=SetUserQueryAction(f"{base}!{suggestion} "),
                     )
                 )
-                
+
             if not len(items):
                 # add item "Create new task"
                 title, tags = self.parser.extract_hashtags(arg_str)
@@ -163,31 +166,36 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
                 title, project_name, project_id = self.parser.extract_project(title)
 
                 desc = ""
-                if len(arg_str) > 0:
-                    desc = self._compile_description(tags, priority, adate, atime, project_name)
+                action = None
+                if len(title) > 0:
+                    desc = self._compile_description(
+                        tags, priority, adate, atime, project_name
+                    )
+                    priority_dict = {"low": 1, "medium": 2, "high": 3}
+
+                    data = {
+                        "action": "create",
+                        "title": title,
+                        "tags": tags,
+                        "priority": priority_dict.get(priority, 0),
+                        "date": adate,
+                        "time": atime,
+                        "timezone": atimezone,
+                        "project_name": project_name,
+                        "project_id": project_id,
+                    }
+
+                    action = ExtensionCustomAction(data)
                 else:
                     desc = "Type in a task title and press Enter..."
-
-                priority_dict = {"low": 1, "medium": 2, "high": 3}
-
-                data = {
-                    "action": "create",
-                    "title": title,
-                    "tags": tags,
-                    "priority": priority_dict.get(priority, 0),
-                    "date": adate,
-                    "time": atime,
-                    "timezone": atimezone,
-                    "project_name": project_name,
-                    "project_id": project_id,
-                }
+                    action = DoNothingAction()
 
                 items.append(
                     ExtensionResultItem(
                         icon="images/ticktick.png",
                         name="Create new task",
                         description=desc,
-                        on_enter=ExtensionCustomAction(data),
+                        on_enter=action,
                     )
                 )
 
