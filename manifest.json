@@ -1,7 +1,7 @@
 {
   "required_api_version": "2",
   "name": "TickTick",
-  "description": "Inofficial TickTick extension",
+  "description": "Unofficial TickTick extension",
   "developer_name": "Robin Strehlow",
   "icon": "images/ticktick.png",
   "options": {
