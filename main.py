@@ -92,9 +92,9 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
         if priority:
             extracts.append(f"set priority to {priority}")
         if adate:
-            extract = f"set due date to {adate.strftime("%x")}"
+            extract = f'set due date to {adate.strftime("%x")}'
             if atime:
-                extract += f", {atime.strftime("%X")}"
+                extract += f', {atime.strftime("%X")}'
             extracts.append(extract)
         if project_name:
             extracts.append(f"store in ~{project_name}")
