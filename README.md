@@ -5,6 +5,22 @@ A simple extension that allows to create tasks in [TickTick](https://www.ticktic
 
 ![ulauncher-ticktick](images/example_ulauncher_ticktick.png)
 
+## Install
+
+Before installing the extension from within the Ulauncher extension page, make sure to install the Python package `pytz`.
+You can use pip
+
+```bash
+pip install pytz
+```
+
+or, for a system-wide installation, install the the respective package using your system's pacakge manager. For Ubuntu,
+this would be achieved by
+
+```bash
+sudo apt install python3-pytz
+```
+
 ## Setup
 
 To authorize with your TickTick account, go to [developer.ticktick.com](https://developer.ticktick.com/manage) and
