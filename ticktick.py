@@ -1,6 +1,6 @@
 import requests
 import datetime
-import pytz
+from zoneinfo import ZoneInfo
 import logging
 
 from urllib.parse import urlencode
@@ -42,7 +42,7 @@ class TickTickApi:
                 adatetime = datetime.datetime(adate.year, adate.month, adate.day)
                 isAllDay = True
 
-            adatetime = pytz.timezone(atimezone).localize(adatetime)
+            adatetime = adatetime.replace(tzinfo=ZoneInfo('localtime'))
 
             formatted_date = adatetime.strftime("%Y-%m-%dT%H:%M:%S%z")
 
