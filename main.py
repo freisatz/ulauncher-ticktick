@@ -171,7 +171,7 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
                     desc = self._compile_description(
                         tags, priority, adate, atime, project_name
                     )
-                    priority_dict = {"low": 1, "medium": 2, "high": 3}
+                    priority_dict = {"low": 1, "medium": 3, "high": 5}
 
                     data = {
                         "action": "create",
