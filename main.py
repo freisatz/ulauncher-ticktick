@@ -79,6 +79,7 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
 
     api = None
     parser = None
+    projects_pending = None
 
     def __init__(self):
         super().__init__()
@@ -113,12 +114,7 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
 
     def on_update(self, value):
         self.api.access_token = value
-
-        if value:
-            response = self.api.get_projects()
-
-            if response.ok:
-                self.parser.init_projects(response.json())
+        self.projects_pending = True
 
     def on_event(self, event: KeywordQueryEvent, extension: TickTickExtension):
 
@@ -127,6 +123,18 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
         items = []
 
         if extension.get_access_token():
+
+            if self.projects_pending:
+                try:
+                    logger.info("Loading projects from api...")
+                    response = self.api.get_projects()
+
+                    if response.ok:
+                        self.parser.init_projects(response.json())
+                        self.projects_pending = False
+                        logger.info("Successfully initialized project dictionary.")
+                except:
+                    logger.error("Failed to retrieve projects.")
 
             # add project name suggestions item
             base, suggestions = self.parser.get_project_suggestions(
@@ -171,7 +179,7 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
                     desc = self._compile_description(
                         tags, priority, adate, atime, project_name
                     )
-                    priority_dict = {"low": 1, "medium": 2, "high": 3}
+                    priority_dict = {"low": 1, "medium": 3, "high": 5}
 
                     data = {
                         "action": "create",
