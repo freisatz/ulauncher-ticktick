@@ -23,7 +23,7 @@ class StringParser:
     def extract_project(self, str):
         project_names = []
         project_name = ""
-        project_id = ""
+        project_id = None
         for name in self.projects_dict.keys():
             project_names.append(name)
 
