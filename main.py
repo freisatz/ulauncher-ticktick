@@ -141,7 +141,7 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
 
             # add project name suggestions item
             base, suggestions = self.parser.get_project_suggestions(
-                event.get_query(), max_matches=10
+                str(event.get_query()), max_matches=10
             )
 
             for suggestion in suggestions:
@@ -156,7 +156,7 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
                 )
 
             # add priority suggestions item
-            base, suggestions = self.parser.get_priority_suggestions(event.get_query())
+            base, suggestions = self.parser.get_priority_suggestions(str(event.get_query()))
 
             for suggestion in suggestions:
 
