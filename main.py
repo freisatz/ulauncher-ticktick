@@ -133,12 +133,15 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
                         self.parser.init_projects(response.json())
                         self.projects_pending = False
                         logger.info("Successfully initialized project dictionary.")
+                    else:
+                        json = response.json()
+                        logger.error(json)
                 except:
                     logger.error("Failed to retrieve projects.")
 
             # add project name suggestions item
             base, suggestions = self.parser.get_project_suggestions(
-                event.get_query(), max_matches=10
+                str(event.get_query()), max_matches=10
             )
 
             for suggestion in suggestions:
@@ -153,7 +156,7 @@ class KeywordQueryEventListener(EventListener, VariableUpdateListener):
                 )
 
             # add priority suggestions item
-            base, suggestions = self.parser.get_priority_suggestions(event.get_query())
+            base, suggestions = self.parser.get_priority_suggestions(str(event.get_query()))
 
             for suggestion in suggestions:
 
@@ -246,7 +249,7 @@ class ItemEnterEventListener(EventListener, VariableUpdateListener):
 
     def _do_create(self, event: ItemEnterEvent, _: TickTickExtension):
         data = event.get_data()
-        self.api.create_task(
+        response = self.api.create_task(
             data["title"],
             data["project_id"],
             data["tags"],
@@ -255,6 +258,11 @@ class ItemEnterEventListener(EventListener, VariableUpdateListener):
             data["time"],
             data["timezone"],
         )
+        if response.ok:
+            logger.info("Successfully created task.")
+        else:
+            json = response.json()
+            logger.error(json)
 
     def _do_authorize(self, _: ItemEnterEvent, extension: TickTickExtension):
         access_token = AuthManager.run(
